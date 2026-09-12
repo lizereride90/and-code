@@ -79,6 +79,7 @@ installed and run.
 |---|---|---|---|
 | Debian Bookworm slim rootfs (bootstrap) | `registry-1.docker.io` OCI image (`debian:12-bookworm-slim`, version `12-bookworm-slim` pinned in [`local-runtime-manifest.json`](app/src/main/assets/local-runtime-manifest.json)) | Debian itself is GPL-2.0; see [debian.org/legal](https://www.debian.org/legal/) | Used as the base rootfs for OpenCode, Claude Code, and Antigravity |
 | Debian Bookworm packages | Official Debian mirrors (`deb.debian.org`, `security.debian.org`), fetched via `apt` at setup time | Each Debian package keeps its own upstream license (mix of GPL, LGPL, MIT, BSD, and others); see [debian.org/legal](https://www.debian.org/legal/) | Installed into the shared sandbox and the Antigravity rootfs at setup time — see `LocalRuntimeInstaller.kt`/`DebianRootfsInstaller.kt` |
+| Optional desktop packages (`xfce4`, `xfce4-terminal`, `dbus-x11`, `xauth`, `tigervnc-standalone-server`, `fonts-dejavu-core`) | Official Debian mirrors, fetched via `apt` only when the user installs the desktop (`installDesktop` in `LocalRuntimeInstaller.kt`) | XFCE is GPL-2.0 (`xfce4`/`xfce4-terminal`); TigerVNC is GPL-2.0; each package keeps its own upstream license | Adds the XFCE desktop served by TigerVNC's `Xvnc` to the built-in viewer; not installed by default |
 
 ## Gradle / Android dependencies
 
