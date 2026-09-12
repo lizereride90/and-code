@@ -44,8 +44,8 @@ enum class RfbConnectionState {
  * own process, which is why no TLS or exotic security types are needed.
  */
 class RfbClient(
-    host: String,
-    port: Int,
+    private val host: String,
+    private val port: Int,
     private val password: String,
     private val connectTimeoutMillis: Int = 8_000,
     private val socketFactory: (String, Int, Int) -> Socket = { h, p, timeout ->
@@ -207,7 +207,7 @@ class RfbClient(
     private fun readServerVersion(input: DataInputStream) {
         val versionBytes = ByteArray(12)
         input.readFully(versionBytes)
-        val version = String(versionBytes, Charsets.ASCII)
+        val version = String(versionBytes, Charsets.US_ASCII)
         if (!version.startsWith("RFB ")) {
             error("The desktop did not speak VNC: $version")
         }

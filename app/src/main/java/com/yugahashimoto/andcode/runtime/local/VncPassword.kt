@@ -18,7 +18,17 @@ object VncPassword {
     /**
      * The fixed XOR key TigerVNC/RealVNC obfuscate the password file with, in file byte order.
      */
-    val OBFUSCATION_KEY: ByteArray = byteArrayOf(0xE4, 0x91, 0xDA, 0xF0, 0x9D, 0x23, 0xB8, 0xCC)
+    val OBFUSCATION_KEY: ByteArray =
+        byteArrayOf(
+            0xE4.toByte(),
+            0x91.toByte(),
+            0xDA.toByte(),
+            0xF0.toByte(),
+            0x9D.toByte(),
+            0x23.toByte(),
+            0xB8.toByte(),
+            0xCC.toByte(),
+        )
 
     private val ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
     private val random = SecureRandom()
@@ -38,7 +48,7 @@ object VncPassword {
     fun obfuscate(password: String): ByteArray =
         ByteArray(MAX_LENGTH) { index ->
             val plain = password.getOrNull(index)?.code?.takeIf { it in 0..0xFF }?.toByte() ?: 0x00
-            plain.xor(OBFUSCATION_KEY[index])
+            plain.toInt().xor(OBFUSCATION_KEY[index].toInt()).toByte()
         }
 
     /**

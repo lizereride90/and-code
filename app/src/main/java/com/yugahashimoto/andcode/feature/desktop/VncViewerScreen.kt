@@ -62,8 +62,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+
+private const val LONG_PRESS_NANOS = 600_000_000L
 
 /**
  * Full-screen VNC viewer. A single finger moves the pointer (drag holds the active mouse button and
@@ -300,7 +300,8 @@ fun VncViewerScreen(
                         }
                     }
                 }
-                VncPhase.Closed, VncPhase.Connected -> Unit
+                VncPhase.Closed -> Unit
+                is VncPhase.Connected -> Unit
                 is VncPhase.Failed -> Unit
             }
         }
@@ -343,6 +344,7 @@ private fun DesktopPointerGestures(
                 val deadZone = 10 * density
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    val downTime = System.nanoTime()
                     var pointerCount = 1
                     var wasMultiTouch = false
                     var beganDrag = false
@@ -368,18 +370,13 @@ private fun DesktopPointerGestures(
                         }
                     }
 
-                    val longPress =
-                        launch {
-                            delay(600)
-                            if (pointerCount == 1 && !beganDrag && !wasMultiTouch && isActive) {
-                                longPressSent = true
-                                val desktop = toDesktop(down.position)
-                                val x = desktop.x.roundToInt()
-                                val y = desktop.y.roundToInt()
-                                sendPointerRef.value(RfbButtons.RIGHT, x, y)
-                                sendPointerRef.value(0, x, y)
-                            }
-                        }
+                    fun fireLongPress() {
+                        val desktop = toDesktop(down.position)
+                        val x = desktop.x.roundToInt()
+                        val y = desktop.y.roundToInt()
+                        sendPointerRef.value(RfbButtons.RIGHT, x, y)
+                        sendPointerRef.value(0, x, y)
+                    }
 
                     var panStartScale = currentScale.value
                     var panStartOffsetX = currentOffsetX.value
@@ -396,7 +393,6 @@ private fun DesktopPointerGestures(
                         if (pointerCount >= 2) {
                             if (!wasMultiTouch) {
                                 wasMultiTouch = true
-                                longPress.cancel()
                                 releaseButtons()
                                 panStartScale = currentScale.value
                                 panStartOffsetX = currentOffsetX.value
@@ -437,7 +433,13 @@ private fun DesktopPointerGestures(
 
                         if (!beganDrag && (change.position - down.position).getDistance() > deadZone) {
                             beganDrag = true
-                            longPress.cancel()
+                        }
+
+                        if (!longPressSent && !beganDrag &&
+                            System.nanoTime() - downTime >= LONG_PRESS_NANOS
+                        ) {
+                            longPressSent = true
+                            fireLongPress()
                         }
 
                         if (longPressSent) {
@@ -458,13 +460,16 @@ private fun DesktopPointerGestures(
                         change.consume()
                     }
 
-                    longPress.cancel()
                     if (pointerCount == 1 && !wasMultiTouch && !beganDrag && !longPressSent) {
                         val desktop = toDesktop(down.position)
                         val x = desktop.x.roundToInt()
                         val y = desktop.y.roundToInt()
-                        sendPointerRef.value(pointerButtons, x, y)
-                        sendPointerRef.value(0, x, y)
+                        if (System.nanoTime() - downTime >= LONG_PRESS_NANOS) {
+                            fireLongPress()
+                        } else {
+                            sendPointerRef.value(pointerButtons, x, y)
+                            sendPointerRef.value(0, x, y)
+                        }
                     } else {
                         releaseButtons()
                     }
