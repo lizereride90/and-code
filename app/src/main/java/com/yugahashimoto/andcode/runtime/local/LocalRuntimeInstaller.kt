@@ -549,6 +549,9 @@ class LocalRuntimeInstaller(
                     "deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware\n",
             )
         }
+        // Debian 12 ships a deb822-format source file that duplicates the same mirrors; remove it so
+        // apt merges nothing and warnings don't swallow the real error in failure logs.
+        File(rootfs, "etc/apt/sources.list.d/debian.sources").takeIf { it.isFile }?.delete()
         val command =
             listOf(
                 suite.proot.absolutePath,
@@ -602,9 +605,10 @@ class LocalRuntimeInstaller(
         }
         require(process.exitValue() == 0) {
             // The hint sits between the headline and the raw log, or a 4000-character tail scrolls
-            // it off the screen the error is read on.
+            // it off the screen the error is read on. Warning noise (duplicated sources, benign
+            // dpkg notices) is filtered out so the actual failing line survives the tail.
             "Unable to install runtime packages. $PACKAGE_INSTALL_RETRY_HINT\n\n" +
-                "Last log lines:\n${installLog.readText().takeLast(4000)}"
+                "Last log lines:\n${meaningfulLogTail(installLog)}"
         }
         if ("gh" in packages) installGitHubCli(rootfs, suite, prootTmp, aptCache)
     }
@@ -999,4 +1003,27 @@ class LocalRuntimeInstaller(
         const val DESKTOP_VNC_PORT = 5901
         const val DESKTOP_GEOMETRY = "1280x800"
     }
+}
+
+/**
+ * The last, most meaningful slice of an apt install log: warning noise such as duplicated-source
+ * notices or benign dpkg advisories is culled so a genuine `E:` or `dpkg: error` line - the thing a
+ * user on a phone actually needs to see - survives the tail.
+ */
+private fun meaningfulLogTail(logFile: File, maxBytes: Int = 4000): String {
+    val meaningful =
+        runCatching { logFile.readLines() }.getOrDefault(emptyList())
+            .filterNot { line ->
+                line.isEmpty() ||
+                    line.startsWith("W:") ||
+                    line.startsWith("W,") ||
+                    line.startsWith("dpkg: warning") ||
+                    line.startsWith("gpg:") ||
+                    line.startsWith("debconf:")
+            }
+    var tail = meaningful.takeLast(80).joinToString("\n")
+    while (tail.toByteArray(Charsets.UTF_8).size > maxBytes && tail.isNotEmpty()) {
+        tail = tail.drop(256).trimStart('\n')
+    }
+    return tail
 }
