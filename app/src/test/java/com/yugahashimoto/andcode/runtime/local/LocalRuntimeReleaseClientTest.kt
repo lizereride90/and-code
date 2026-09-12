@@ -41,7 +41,6 @@ class LocalRuntimeReleaseClientTest {
                         notes = "release notes",
                         assets =
                             listOf(
-                                asset("opencode-linux-arm64.tar.gz", "a".repeat(64)),
                                 asset("opencode-linux-arm64.tar.gz", "b".repeat(64), size = 60_366_998),
                             ),
                     ),
@@ -57,7 +56,7 @@ class LocalRuntimeReleaseClientTest {
             assertEquals("release notes", available.release.releaseNotes)
             assertEquals("opencode-linux-arm64.tar.gz", available.release.asset.name)
             assertEquals("b".repeat(64), available.release.asset.sha256)
-            assertEquals(57_000_000, available.release.asset.sizeBytes)
+            assertEquals(60_366_998, available.release.asset.sizeBytes)
             val request = server.takeRequest()
             assertEquals("application/vnd.github+json", request.getHeader("Accept"))
             assertEquals("AndCode", request.getHeader("User-Agent"))

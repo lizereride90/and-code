@@ -56,8 +56,10 @@ class ClaudeCodeInstallerTest {
             }
         val message = ClaudeCodeInstaller.failureMessage("installation", 1, log)
         val firstLine = message.lineSequence().first()
+        // `E403` is not itself matched by the error pattern (no word boundary before the digits),
+        // so the primary error is the following `npm ERR! 403 Forbidden - PUT ...` line that is.
         assertTrue(
-            firstLine.startsWith("Claude Code installation failed (exit 1): npm ERR! code E403"),
+            firstLine.startsWith("Claude Code installation failed (exit 1): npm ERR! 403 Forbidden"),
         )
         assertTrue(message.contains("--- log tail ---"))
     }

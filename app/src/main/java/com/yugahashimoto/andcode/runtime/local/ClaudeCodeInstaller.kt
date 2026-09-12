@@ -31,9 +31,6 @@ object ClaudeCodeInstaller {
     private const val NPM_PACKAGE = "@anthropic-ai/claude-code"
     const val NPM = "/usr/bin/npm"
 
-    /** `$` in a shell snippet, spelled out because these scripts live in Kotlin raw strings. */
-    private const val S = "$"
-
     /**
      * Package-manager half of the install, split out so tests can drive it with a stub `npm`.
      *
@@ -62,7 +59,7 @@ object ClaudeCodeInstaller {
         npm: String = NPM,
         claude: String = CLAUDE_BINARY,
     ) = """
-        if ! $npm install -g --prefix /usr/local --no-fund --no-audit "$S{NPM_PACKAGE}@latest"; then
+        if ! $npm install -g --prefix /usr/local --no-fund --no-audit "$NPM_PACKAGE@latest"; then
           echo 'and-code: npm failed to upgrade $NPM_PACKAGE' >&2
           exit 1
         fi
