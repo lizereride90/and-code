@@ -933,7 +933,7 @@ class LocalRuntimeInstaller(
          */
         const val GUEST_ENV =
             "export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin " +
-                "TMPDIR=/tmp HOME=/root && "
+                "TMPDIR=/tmp HOME=/root DPKG_FORCE_UNSAFE_IO=1 && "
 
         private const val METADATA_FILE = "metadata.json"
         private const val BROWSER_MCP_NAME = "and-code-browser"
