@@ -39,12 +39,22 @@ class VncPasswordTest {
         val key = VncPassword.desKey("r3v3rse")
         assertEquals(8, key.size)
         // reversing the bits of each reversed byte lands back on the original password bytes.
-        for ((index, value) in key.withIndex()) {
+        for (index in key.indices) {
             val passwordByte = "r3v3rse".getOrNull(index)!!.code.toByte()
             val doubleReversed =
-                Integer.reverseBits((value.toInt() and 0xFF) shl 24).shr(24).toByte()
+                reverseBits(reverseBits(passwordByte.toInt())).toByte()
             assertEquals(passwordByte, doubleReversed)
         }
+    }
+
+    private fun reverseBits(byte: Int): Int {
+        var value = byte and 0xFF
+        var reversed = 0
+        repeat(8) {
+            reversed = (reversed shl 1) or (value and 1)
+            value = value shr 1
+        }
+        return reversed
     }
 
     @Test
