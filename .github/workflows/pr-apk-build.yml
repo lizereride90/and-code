@@ -9,13 +9,66 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  DESKTOP_ROOTFS_BASE: runtime-image/out
+  DESKTOP_ROOTFS_ASSET_NAME: andcode-desktop-arm64-v8a.tar.gz
+
 jobs:
-  build:
+  # Builds the fully-provisioned Debian desktop rootfs (packages + XFCE + TigerVNC + gh baked in)
+  # on a native arm64 runner and passes it to the APK job, which embeds it as an app asset. The
+  # rootfs is cached keyed on runtime-image/VERSION, so CI stays fast after the first run; bump
+  # VERSION whenever the Dockerfile recipe changes.
+  build-desktop-rootfs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'build-apk' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: cache-desktop-rootfs
+        with:
+          path: ${{ env.DESKTOP_ROOTFS_BASE }}/${{ env.DESKTOP_ROOTFS_ASSET_NAME }}
+          key: andcode-desktop-arm64-v8a-${{ hashFiles('runtime-image/VERSION') }}
+      - name: Build baked desktop rootfs
+        if: steps.cache-desktop-rootfs.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$DESKTOP_ROOTFS_BASE"
+          docker build \
+            --platform linux/arm64 \
+            -t andcode-debian-desktop:local \
+            -f runtime-image/debian-desktop/Dockerfile \
+            runtime-image/debian-desktop
+          container="$(docker create andcode-debian-desktop:local)"
+          docker export "$container" | gzip -1 > "$DESKTOP_ROOTFS_BASE/$DESKTOP_ROOTFS_ASSET_NAME"
+          docker rm "$container" >/dev/null
+          ls -lh "$DESKTOP_ROOTFS_BASE/$DESKTOP_ROOTFS_ASSET_NAME"
+          sha256sum "$DESKTOP_ROOTFS_BASE/$DESKTOP_ROOTFS_ASSET_NAME"
+      - name: Embed desktop rootfs into app assets
+        run: |
+          set -euo pipefail
+          mkdir -p app/src/main/assets/local-runtime
+          cp "$DESKTOP_ROOTFS_BASE/$DESKTOP_ROOTFS_ASSET_NAME" app/src/main/assets/local-runtime/
+          ls -lh app/src/main/assets/local-runtime/
+
+  build:
+    needs: build-desktop-rootfs
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'build-apk' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: cache-desktop-rootfs
+        with:
+          path: ${{ env.DESKTOP_ROOTFS_BASE }}/${{ env.DESKTOP_ROOTFS_ASSET_NAME }}
+          key: andcode-desktop-arm64-v8a-${{ hashFiles('runtime-image/VERSION') }}
+      - name: Embed desktop rootfs into app assets
+        run: |
+          set -euo pipefail
+          mkdir -p app/src/main/assets/local-runtime
+          cp "$DESKTOP_ROOTFS_BASE/$DESKTOP_ROOTFS_ASSET_NAME" app/src/main/assets/local-runtime/
+          ls -lh app/src/main/assets/local-runtime/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

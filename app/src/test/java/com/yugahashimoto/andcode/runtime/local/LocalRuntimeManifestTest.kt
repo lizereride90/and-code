@@ -57,4 +57,29 @@ class LocalRuntimeManifestTest {
             invalid.validate("arm64-v8a")
         }
     }
+
+    @Test
+    fun `baked desktop asset round-trips through serialization`() {
+        val baked = architecture.copy(desktopBakedAsset = "local-runtime/andcode-desktop-arm64-v8a.tar.gz")
+
+        baked.validate("arm64-v8a")
+        assertEquals("local-runtime/andcode-desktop-arm64-v8a.tar.gz", baked.desktopBakedAsset)
+    }
+
+    @Test
+    fun `baked desktop asset present by default when omitted`() {
+        // Only exposed for builds that ship the pre-installed rootfs; the default stays null so
+        // stock builds keep the download-and-apt path.
+        assertEquals(null, architecture.desktopBakedAsset)
+        architecture.validate("arm64-v8a")
+    }
+
+    @Test
+    fun `blank baked desktop asset is rejected`() {
+        val invalid = architecture.copy(desktopBakedAsset = "   ")
+
+        assertThrows(IllegalArgumentException::class.java) {
+            invalid.validate("arm64-v8a")
+        }
+    }
 }

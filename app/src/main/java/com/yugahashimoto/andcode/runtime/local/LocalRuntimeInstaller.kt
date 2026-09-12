@@ -76,12 +76,20 @@ class LocalRuntimeInstaller(
                 )
             // Runtimes created before this option existed already contain the full toolchain, and
             // adding another agent must not silently remove it by rebuilding a smaller rootfs.
-            val includeFullDevelopmentTools =
-                installFullDevelopmentTools || existingMetadata?.fullDevelopmentToolsInstalled == true
             require(requestedAgents.isNotEmpty()) { "At least one agent must be selected" }
             val commandSuite = EmbeddedCommandSuite(context, runtimeDirectory, abi).ensureInstalled()
             val manifest = manifestReader.read()
             val architecture = manifest.architecture(abi)
+            // Debug builds ship the full Debian desktop rootfs pre-installed as an APK asset, so the
+            // install extracts it locally and never runs apt (or even needs the network) for the
+            // guest OS. Stock builds have no such asset and fall back to the downloaded slim image.
+            val bakedRootfs =
+                architecture.desktopBakedAsset?.let { name ->
+                    runCatching { context.assets.open(name) }.getOrNull()
+                }
+            val includeFullDevelopmentTools =
+                installFullDevelopmentTools || existingMetadata?.fullDevelopmentToolsInstalled == true ||
+                    bakedRootfs != null
             val cache = File(runtimeDirectory, "cache").apply { mkdirs() }
             val staging = File(runtimeDirectory, "environment.staging")
             val active = File(runtimeDirectory, "environment")
@@ -97,19 +105,23 @@ class LocalRuntimeInstaller(
             staging.mkdirs()
 
             try {
-                val debianArchive = File(cache, "debian-${manifest.debianVersion}-$abi.tar.gz")
-                download(
-                    url = architecture.debianUrl,
-                    destination = debianArchive,
-                    expectedSha256 = architecture.debianSha256,
-                    expectedSizeBytes = architecture.debianSizeBytes,
-                    startProgress = 0.05f,
-                    endProgress = 0.22f,
-                    label = context.getString(R.string.install_step_downloading_debian),
-                    onProgress = onShared,
-                    // registry-1.docker.io only serves the OCI blob to requests carrying a token.
-                    headers = mapOf("Authorization" to "Bearer ${accessToken()}"),
-                )
+                if (bakedRootfs != null) {
+                    onShared(0.22f, context.getString(R.string.install_step_downloading_debian))
+                } else {
+                    val debianArchive = File(cache, "debian-${manifest.debianVersion}-$abi.tar.gz")
+                    download(
+                        url = architecture.debianUrl,
+                        destination = debianArchive,
+                        expectedSha256 = architecture.debianSha256,
+                        expectedSizeBytes = architecture.debianSizeBytes,
+                        startProgress = 0.05f,
+                        endProgress = 0.22f,
+                        label = context.getString(R.string.install_step_downloading_debian),
+                        onProgress = onShared,
+                        // registry-1.docker.io only serves the OCI blob to requests carrying a token.
+                        headers = mapOf("Authorization" to "Bearer ${accessToken()}"),
+                    )
+                }
                 val withOpenCode = LocalAgent.OPEN_CODE in requestedAgents
                 val openCodeArchive =
                     File(cache, "opencode-${manifest.openCodeVersion}-$abi.tar.gz").takeIf { withOpenCode }?.also { archive ->
@@ -126,7 +138,12 @@ class LocalRuntimeInstaller(
 
                 val rootfs = File(staging, "rootfs").apply { mkdirs() }
                 onShared(0.75f, context.getString(R.string.install_step_extracting_linux_env))
-                debianArchive.inputStream().use { RuntimeArchive.extractTarGz(it, rootfs) }
+                if (bakedRootfs != null) {
+                    bakedRootfs.use { RuntimeArchive.extractTarGz(it, rootfs) }
+                } else {
+                    val debianArchive = File(cache, "debian-${manifest.debianVersion}-$abi.tar.gz")
+                    debianArchive.inputStream().use { RuntimeArchive.extractTarGz(it, rootfs) }
+                }
 
                 val openCodeBinary =
                     openCodeArchive?.let { archive ->
@@ -171,26 +188,31 @@ class LocalRuntimeInstaller(
                         },
                     ),
                 )
-                installPackages(
-                    rootfs = rootfs,
-                    suite = commandSuite,
-                    packages =
-                        buildList {
-                            addAll(
-                                if (includeFullDevelopmentTools) {
-                                    REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
-                                } else {
-                                    REQUIRED_RUNTIME_PACKAGES
-                                },
-                            )
-                            // Claude Code installs through npm, so its runtime needs Node.js even on
-                            // the otherwise-minimal default install.
-                            if (LocalAgent.CLAUDE_CODE in requestedAgents) {
-                                add("nodejs")
-                                add("npm")
-                            }
-                        }.distinct(),
-                )
+                // The baked rootfs already contains the full toolchain, desktop, Node.js and `gh`, so
+                // there is nothing to apt-get - a source of every interrupted-install failure on
+                // real devices. Everything else (configureRootfs, agent installs) still runs.
+                if (bakedRootfs == null) {
+                    installPackages(
+                        rootfs = rootfs,
+                        suite = commandSuite,
+                        packages =
+                            buildList {
+                                addAll(
+                                    if (includeFullDevelopmentTools) {
+                                        REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
+                                    } else {
+                                        REQUIRED_RUNTIME_PACKAGES
+                                    },
+                                )
+                                // Claude Code installs through npm, so its runtime needs Node.js even on
+                                // the otherwise-minimal default install.
+                                if (LocalAgent.CLAUDE_CODE in requestedAgents) {
+                                    add("nodejs")
+                                    add("npm")
+                                }
+                            }.distinct(),
+                    )
+                }
                 if (LocalAgent.CLAUDE_CODE in requestedAgents) {
                     onClaude(0.93f, context.getString(R.string.install_step_installing_claude_code))
                     ClaudeCodeInstaller.installInto(rootfs, commandSuite, runtimeDirectory)
@@ -209,16 +231,37 @@ class LocalRuntimeInstaller(
                 }
 
                 val metadata =
-                    LocalRuntimeMetadata(
-                        version = if (withOpenCode) manifest.openCodeVersion else "",
-                        port = manifest.port,
-                        installedAt = System.currentTimeMillis(),
-                        runtimeVersion = manifest.runtimeVersion,
-                        abi = abi,
-                        components = requestedAgents.map(LocalAgent::id).toSet(),
-                        fullDevelopmentToolsInstalled = includeFullDevelopmentTools,
-                        fullDebianDevelopmentToolsInstalled = includeFullDevelopmentTools && antigravityRootfs != null,
-                    )
+                    if (bakedRootfs != null) {
+                        // The desktop packages are already in the image; only the per-install VNC
+                        // password and session script need provisioning on the device.
+                        val password = VncPassword.generate()
+                        onShared(0.95f, context.getString(R.string.install_step_installing_desktop))
+                        provisionDesktop(rootfs, password)
+                        LocalRuntimeMetadata(
+                            version = if (withOpenCode) manifest.openCodeVersion else "",
+                            port = manifest.port,
+                            installedAt = System.currentTimeMillis(),
+                            runtimeVersion = manifest.runtimeVersion,
+                            abi = abi,
+                            components = requestedAgents.map(LocalAgent::id).toSet(),
+                            fullDevelopmentToolsInstalled = includeFullDevelopmentTools,
+                            fullDebianDevelopmentToolsInstalled = includeFullDevelopmentTools && antigravityRootfs != null,
+                            desktopInstalled = true,
+                            desktopVncPort = DESKTOP_VNC_PORT,
+                            desktopVncPassword = password,
+                        )
+                    } else {
+                        LocalRuntimeMetadata(
+                            version = if (withOpenCode) manifest.openCodeVersion else "",
+                            port = manifest.port,
+                            installedAt = System.currentTimeMillis(),
+                            runtimeVersion = manifest.runtimeVersion,
+                            abi = abi,
+                            components = requestedAgents.map(LocalAgent::id).toSet(),
+                            fullDevelopmentToolsInstalled = includeFullDevelopmentTools,
+                            fullDebianDevelopmentToolsInstalled = includeFullDevelopmentTools && antigravityRootfs != null,
+                        )
+                    }
                 File(staging, METADATA_FILE).writeText(json.encodeToString(metadata))
                 onShared(0.96f, context.getString(R.string.install_step_activating_runtime))
                 accessCoordinator.write {
@@ -756,6 +799,7 @@ class LocalRuntimeInstaller(
      * instead of depending on apt's dependency resolution for what is effectively one file.
      */
     private suspend fun installPtyUtility(rootfs: File) {
+        if (File(rootfs, "usr/bin/script").isFile) return
         val asset = DebianRootfsManifest.bsdutilsFor(abi)
         val packageFile =
             File(runtimeDirectory, "cache/${asset.name}-$abi.deb").apply {

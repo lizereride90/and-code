@@ -214,6 +214,7 @@ android {
         }
     }
     androidResources {
+        noCompress += "gz"
         noCompress += "tflite"
     }
 }

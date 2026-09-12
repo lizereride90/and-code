@@ -9,6 +9,7 @@
       "debianUrl": "https://registry-1.docker.io/v2/library/debian/blobs/sha256:53bb9e501f1803aca595be8d902a62cea6bf4d996ce6f7dfe16c1c97be343e6c",
       "debianSha256": "53bb9e501f1803aca595be8d902a62cea6bf4d996ce6f7dfe16c1c97be343e6c",
       "debianSizeBytes": 28117255,
+      "desktopBakedAsset": "local-runtime/andcode-desktop-arm64-v8a.tar.gz",
       "openCodeUrl": "https://github.com/anomalyco/opencode/releases/download/v1.18.30/opencode-linux-arm64.tar.gz",
       "openCodeSha256": "4111a55c2a02c0fac314bd51e9a2330280e6d29d2b85b9554fff6d62612566ed"
     },

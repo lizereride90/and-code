@@ -35,6 +35,12 @@ data class LocalRuntimeArchitecture(
     @SerialName("debianSizeBytes") val debianSizeBytes: Long,
     @SerialName("openCodeUrl") val openCodeUrl: String,
     @SerialName("openCodeSha256") val openCodeSha256: String,
+    /**
+     * Asset path inside the APK for a pre-installed rootfs (packages + desktop + VNC already
+     * baked in). When present the installer extracts this and never runs apt on the device;
+     * stock builds leave it absent and fall back to downloading the slim image.
+     */
+    @SerialName("desktopBakedAsset") val desktopBakedAsset: String? = null,
 ) {
     fun validate(abi: String) {
         require(debianUrl.startsWith("https://")) { "Debian rootfs URL for $abi must use HTTPS" }
@@ -42,6 +48,7 @@ data class LocalRuntimeArchitecture(
         require(SHA256.matches(debianSha256)) { "Invalid Debian rootfs SHA-256 for $abi" }
         require(SHA256.matches(openCodeSha256)) { "Invalid OpenCode SHA-256 for $abi" }
         require(debianSizeBytes > 0L) { "Invalid Debian rootfs size for $abi" }
+        desktopBakedAsset?.let { require(it.isNotBlank()) { "Baked desktop asset for $abi must not be blank" } }
     }
 
     companion object {
