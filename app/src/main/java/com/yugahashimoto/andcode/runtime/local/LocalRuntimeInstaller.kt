@@ -603,7 +603,10 @@ class LocalRuntimeInstaller(
                     environment()["PROOT_TMP_DIR"] = prootTmp.absolutePath
                 }
                 .start()
-        val completed = process.waitFor(15, java.util.concurrent.TimeUnit.MINUTES)
+        // Unpacking the desktop suite in PRoot is disk-bound and can outrun the old
+        // 15-minute cap on slower devices; a kill mid-dpkg also leaves the interrupted state that
+        // [installPackages] now replays first. Give the transaction a generous ceiling instead.
+        val completed = process.waitFor(30, java.util.concurrent.TimeUnit.MINUTES)
         if (!completed) {
             process.destroyForcibly()
             error("Development tool installation timed out. $PACKAGE_INSTALL_RETRY_HINT")
