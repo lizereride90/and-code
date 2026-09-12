@@ -527,6 +527,10 @@ class LocalRuntimeInstaller(
      * Installs [packages] into the shared Debian rootfs with apt-get, running under the guest's own
      * `bash` so the transaction survives whatever is wrong with the extracted image. `gh` needs an
      * extra apt source that bookworm carries no package for, so it is installed separately.
+     *
+     * A killed install can leave dpkg's state interrupted ("dpkg was interrupted, you must manually
+     * run 'dpkg --configure -a'"), after which plain `apt-get` refuses to run. The configure is
+     * replayed at the top of every run so a retry always recovers instead of bricking the install.
      */
     private fun installPackages(
         rootfs: File,
@@ -578,6 +582,7 @@ class LocalRuntimeInstaller(
                 "/usr/bin/sh",
                 "-c",
                 GUEST_ENV +
+                    "DEBIAN_FRONTEND=noninteractive dpkg --configure -a && " +
                     "apt-get update -qq && " +
                     "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends " +
                     "${packages.filterNot { it == "gh" }.joinToString(" ")} && " +
