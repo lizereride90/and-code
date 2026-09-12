@@ -1,4 +1,4 @@
-# AndCode
+# AndCode Debian
 
 <p align="center">
   <a href="https://github.com/yuga-hashimoto/and-code/actions/workflows/android.yml"><img src="https://github.com/yuga-hashimoto/and-code/actions/workflows/android.yml/badge.svg" alt="CI" /></a>
@@ -9,7 +9,10 @@
 
 **Run coding agents locally on Android through a native GUI — no terminal required.**
 
-AndCode is a native Android GUI app that brings AI coding agents to your phone. Chat with [OpenCode](https://github.com/sst/opencode), [Claude Code](https://github.com/anthropics/claude-code), and [Google Antigravity](https://github.com/google-antigravity/antigravity-cli) through a touch-first interface — no terminal, no SSH, no PC required for on-device use. It wraps agent runtimes via PRoot (on-device) or connects remotely to your existing OpenCode server on PC/Mac/Linux.
+AndCode Debian is a separate build of AndCode that runs the agents inside a Debian 12 (glibc) sandbox. Chat with [OpenCode](https://github.com/sst/opencode), [Claude Code](https://github.com/anthropics/claude-code), and [Google Antigravity](https://github.com/google-antigravity/antigravity-cli) through a touch-first interface — no terminal, no SSH, no PC required for on-device use. It wraps agent runtimes via PRoot (on-device) or connects remotely to your existing OpenCode server on PC/Mac/Linux.
+
+> [!NOTE]
+> AndCode Debian uses its own application id (`com.yugahashimoto.andcode.debian`) and app label, so it installs as a separate app that can run side-by-side with the regular AndCode without replacing it.
 
 [Releases](https://github.com/yuga-hashimoto/and-code/releases/latest) · [日本語のREADME](README.ja.md)
 

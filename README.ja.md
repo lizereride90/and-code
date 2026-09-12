@@ -1,4 +1,4 @@
-# AndCode
+# AndCode Debian
 
 <p align="center">
   <a href="https://github.com/yuga-hashimoto/and-code/actions/workflows/android.yml"><img src="https://github.com/yuga-hashimoto/and-code/actions/workflows/android.yml/badge.svg" alt="CI" /></a>
@@ -9,7 +9,10 @@
 
 **AIコーディングエージェントをAndroidのネイティブGUIでローカル実行 — ターミナル不要です。**
 
-AndCodeはAIコーディングエージェントをスマートフォンで使えるようにするネイティブAndroid GUIアプリです。[OpenCode](https://github.com/sst/opencode)、[Claude Code](https://github.com/anthropics/claude-code)、[Google Antigravity](https://github.com/google-antigravity/antigravity-cli)とタッチ操作中心のインターフェースで対話できます — 端末エミュレータもSSHもPCも、オンデバイス実行には一切不要です。PRootによるオンデバイスランタイムか、PC/Mac/Linux上の既存OpenCodeサーバーへのリモート接続で動作します。
+AndCode Debianは、エージェントをDebian 12（glibc）サンドボックス内で実行する別ビルドのAndCodeです。[OpenCode](https://github.com/sst/opencode)、[Claude Code](https://github.com/anthropics/claude-code)、[Google Antigravity](https://github.com/google-antigravity/antigravity-cli)とタッチ操作中心のインターフェースで対話できます — 端末エミュレータもSSHもPCも、オンデバイス実行には一切不要です。PRootによるオンデバイスランタイムか、PC/Mac/Linux上の既存OpenCodeサーバーへのリモート接続で動作します。
+
+> [!NOTE]
+> AndCode Debianは独自のアプリケーションID（`com.yugahashimoto.andcode.debian`）とアプリ名を使用するため、通常のAndCodeを置き換えることなく、別アプリとして並行インストールできます。
 
 [Releases](https://github.com/yuga-hashimoto/and-code/releases/latest) · [English README](README.md)
 

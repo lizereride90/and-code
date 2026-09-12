@@ -112,7 +112,9 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.yugahashimoto.andcode"
+        // Distinct applicationId so "AndCode Debian" installs side-by-side with the regular
+        // AndCode app instead of presenting itself as an update to it.
+        applicationId = "com.yugahashimoto.andcode.debian"
         minSdk = 26
         targetSdk = 35
         versionCode = 59

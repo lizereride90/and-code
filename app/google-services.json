@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:1077322463853:android:0748cdbd40b1f032569d64",
         "android_client_info": {
-          "package_name": "com.yugahashimoto.andcode"
+          "package_name": "com.yugahashimoto.andcode.debian"
         }
       },
       "oauth_client": [],
