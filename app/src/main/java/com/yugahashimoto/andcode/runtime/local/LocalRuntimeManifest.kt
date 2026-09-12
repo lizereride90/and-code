@@ -10,7 +10,7 @@ data class LocalRuntimeManifest(
     @SerialName("schemaVersion") val schemaVersion: Int,
     @SerialName("runtimeVersion") val runtimeVersion: String,
     @SerialName("openCodeVersion") val openCodeVersion: String,
-    @SerialName("alpineVersion") val alpineVersion: String,
+    @SerialName("debianVersion") val debianVersion: String,
     @SerialName("port") val port: Int,
     @SerialName("architectures") val architectures: Map<String, LocalRuntimeArchitecture>,
 ) {
@@ -21,6 +21,7 @@ data class LocalRuntimeManifest(
         require(schemaVersion == 1) { "Unsupported local runtime manifest schema: $schemaVersion" }
         require(runtimeVersion.isNotBlank()) { "Runtime version is missing" }
         require(openCodeVersion.isNotBlank()) { "OpenCode version is missing" }
+        require(debianVersion.isNotBlank()) { "Debian guest version is missing" }
         require(port in 1024..65535) { "Invalid local OpenCode port: $port" }
         require(architectures.isNotEmpty()) { "Runtime manifest has no architectures" }
         architectures.forEach { (abi, item) -> item.validate(abi) }
@@ -29,16 +30,18 @@ data class LocalRuntimeManifest(
 
 @Serializable
 data class LocalRuntimeArchitecture(
-    @SerialName("alpineUrl") val alpineUrl: String,
-    @SerialName("alpineSha256") val alpineSha256: String,
+    @SerialName("debianUrl") val debianUrl: String,
+    @SerialName("debianSha256") val debianSha256: String,
+    @SerialName("debianSizeBytes") val debianSizeBytes: Long,
     @SerialName("openCodeUrl") val openCodeUrl: String,
     @SerialName("openCodeSha256") val openCodeSha256: String,
 ) {
     fun validate(abi: String) {
-        require(alpineUrl.startsWith("https://")) { "Alpine URL for $abi must use HTTPS" }
+        require(debianUrl.startsWith("https://")) { "Debian rootfs URL for $abi must use HTTPS" }
         require(openCodeUrl.startsWith("https://")) { "OpenCode URL for $abi must use HTTPS" }
-        require(SHA256.matches(alpineSha256)) { "Invalid Alpine SHA-256 for $abi" }
+        require(SHA256.matches(debianSha256)) { "Invalid Debian rootfs SHA-256 for $abi" }
         require(SHA256.matches(openCodeSha256)) { "Invalid OpenCode SHA-256 for $abi" }
+        require(debianSizeBytes > 0L) { "Invalid Debian rootfs size for $abi" }
     }
 
     companion object {

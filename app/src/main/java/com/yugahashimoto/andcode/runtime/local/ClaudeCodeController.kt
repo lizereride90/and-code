@@ -29,7 +29,7 @@ sealed interface ClaudeInstallStatus {
 /**
  * What an update attempt actually did.
  *
- * `apk` upgrades in place and says nothing about the version it landed on, so an update that had
+ * `npm` upgrades in place and says nothing about the version it landed on, so an update that had
  * nothing to do and an update that installed a new build looked identical from the outside — the
  * button simply stopped spinning. Comparing the version before and after is the only thing that
  * tells them apart, and the card reports whichever it was.

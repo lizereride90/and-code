@@ -246,8 +246,8 @@ class LocalRuntimeManagerUpdateTest {
                     releaseNotes = "notes",
                     asset =
                         LocalRuntimeReleaseAsset(
-                            name = "opencode-linux-arm64-musl.tar.gz",
-                            url = "https://github.com/anomalyco/opencode/releases/download/v$version/opencode-linux-arm64-musl.tar.gz",
+                            name = "opencode-linux-arm64.tar.gz",
+                            url = "https://github.com/anomalyco/opencode/releases/download/v$version/opencode-linux-arm64.tar.gz",
                             sha256 = "a".repeat(64),
                             sizeBytes = 100,
                         ),

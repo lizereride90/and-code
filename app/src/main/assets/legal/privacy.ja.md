@@ -11,12 +11,12 @@ AndCodeは独立したローカルファーストのAndroidアプリです。**A
 - **アプリの設定**（テーマ、言語、フォントサイズ、選択中のモデル／エージェント、UIの切替、権限モードの選択など）は、端末内のアプリ設定／`SharedPreferences`に保存されます。
 - **リモートOpenCodeサーバーの接続プロファイル**（名前、URL、ユーザー名、パスワード、LAN/TLSオプション）や、その他の機密設定（プロバイダーAPIキー、GitHubトークン、TTSプロバイダーAPIキー）は、`SecureSettingsRepository`内で、Android Keystoreに裏付けられた`EncryptedSharedPreferences`（`AES256_GCM`／`AES256_SIV`）を使って保存されます。これらの値は、入力された用途で特定の接続やAPI呼び出しに使用される場合を除き、端末外へ出ることはありません（例：OpenCodeの接続パスワードは、認証先のOpenCodeサーバーにのみ送信され、GitHubトークンはGitHubのAPIにのみ送信されます）。
 - **セッション／チャット履歴、スケジュール、ワークスペースのメタデータ**は、アプリ再起動後もセッションが失われないよう、アプリ自身のローカルストレージ（SQLite／ローカルカタログ）に保存されます。
-- **Claude CodeとAntigravityの資格情報は、AndCodeにはまったく保存されません。** 各公式CLIは、それぞれが実行される端末内Linux（Alpine）またはDebian rootfs内で、独自のOAuth／トークン保存領域を管理します。たとえばAntigravityのゲストトークンはrootfs内の`root/.gemini/antigravity-cli/antigravity-oauth-token`に置かれ、Claude CodeはデスクトップLinux上と同様の方式で独自の資格情報保存領域を保持します。AndCodeはこれらのファイルの内容を読み取ったり、コピーしたり、Androidのアプリ設定へミラーしたりすることはなく、どこへも送信しません。詳細な流れは[docs/AUTHENTICATION_AND_DATA_FLOW.md](docs/AUTHENTICATION_AND_DATA_FLOW.md)を参照してください。
+- **Claude CodeとAntigravityの資格情報は、AndCodeにはまったく保存されません。** 各公式CLIは、それぞれが実行される端末内Debian rootfs内で、独自のOAuth／トークン保存領域を管理します。たとえばAntigravityのゲストトークンはrootfs内の`root/.gemini/antigravity-cli/antigravity-oauth-token`に置かれ、Claude CodeはデスクトップLinux上と同様の方式で独自の資格情報保存領域を保持します。AndCodeはこれらのファイルの内容を読み取ったり、コピーしたり、Androidのアプリ設定へミラーしたりすることはなく、どこへも送信しません。詳細な流れは[docs/AUTHENTICATION_AND_DATA_FLOW.md](docs/AUTHENTICATION_AND_DATA_FLOW.md)を参照してください。
 
 ## 2. APIキー、接続パスワード、GitHubトークン
 
 - **設定 → プロバイダー**から入力するプロバイダーAPIキー、リモートOpenCode接続パスワード、GitHubのデバイスフローログインで取得するGitHubの個人アクセス／OAuthトークンは、上記のとおり`EncryptedSharedPreferences`に保存されます。
-- **OpenCodeのローカル（端末内）ランタイムを利用する場合、** 入力したプロバイダーAPIキーは2箇所に保存されます。`EncryptedSharedPreferences`（上記のとおり）と、`LocalProviderCredentialStore.syncToRuntime()`により、端末内Alpine rootfs内の`root/.local/share/opencode/auth.json`へ平文で同期される保存先です。これは、ローカルOpenCodeプロセス自身がプロバイダーへの認証に使用するファイル形式であるためです。このファイルはアプリのプライベートなrootfsディレクトリと同程度にしか保護されておらず、`EncryptedSharedPreferences`のような保存時暗号化は追加されていません。OpenCodeの資格情報に関する3つの経路すべてについては、THIRD_PARTY_SERVICES.mdの[OpenCodeの資格情報経路](THIRD_PARTY_SERVICES.md#opencode-credential-paths)を参照してください。
+- **OpenCodeのローカル（端末内）ランタイムを利用する場合、** 入力したプロバイダーAPIキーは2箇所に保存されます。`EncryptedSharedPreferences`（上記のとおり）と、`LocalProviderCredentialStore.syncToRuntime()`により、端末内Debian rootfs内の`root/.local/share/opencode/auth.json`へ平文で同期される保存先です。これは、ローカルOpenCodeプロセス自身がプロバイダーへの認証に使用するファイル形式であるためです。このファイルはアプリのプライベートなrootfsディレクトリと同程度にしか保護されておらず、`EncryptedSharedPreferences`のような保存時暗号化は追加されていません。OpenCodeの資格情報に関する3つの経路すべてについては、THIRD_PARTY_SERVICES.mdの[OpenCodeの資格情報経路](THIRD_PARTY_SERVICES.md#opencode-credential-paths)を参照してください。
 - これらの値は、ログやクラッシュレポートへ書き込まれる前にベストエフォートでマスキングされます（§7を参照。すべてのコードパスでの完全な除去を保証するものではありません）。コードベース内で使用される接続／資格情報のインメモリデータクラスの`toString()`は、機密フィールドを平文で出力しません。
 
 ## 3. 利用者が設定したAIサービスへ送信されるデータ

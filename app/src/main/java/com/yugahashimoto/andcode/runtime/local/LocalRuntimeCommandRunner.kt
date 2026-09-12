@@ -52,7 +52,7 @@ class LocalRuntimeCommandRunner(
                         addAll(DeviceStorage.bindArguments())
                         add("-w")
                         add("/root")
-                        add("/bin/sh")
+                        add("/bin/bash")
                         add("-lc")
                         add(commandText)
                     }

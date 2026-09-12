@@ -147,8 +147,8 @@ class LocalRuntimeReleaseClient(
         private val LOOPBACK_HOSTS = setOf("127.0.0.1", "localhost", "::1")
         private val ASSET_NAME_BY_ABI =
             mapOf(
-                "arm64-v8a" to "opencode-linux-arm64-musl.tar.gz",
-                "x86_64" to "opencode-linux-x64-musl.tar.gz",
+                "arm64-v8a" to "opencode-linux-arm64.tar.gz",
+                "x86_64" to "opencode-linux-x64.tar.gz",
             )
     }
 }

@@ -69,7 +69,7 @@ guarantee that a given agent or provider integration will keep working.
 AndCode's own source code in this repository is licensed under the [MIT License](LICENSE). That
 license applies only to AndCode's Kotlin/Android source code. It does **not** extend to, relicense,
 or grant any rights to the third-party CLIs, binaries, runtimes, or packages AndCode installs or
-launches (Claude Code, Google Antigravity, OpenCode, PRoot, Alpine/Debian packages, and others),
+launches (Claude Code, Google Antigravity, OpenCode, PRoot, Debian packages, and others),
 each of which remains subject to its own upstream license and terms. See
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [TRADEMARKS.md](TRADEMARKS.md).
 

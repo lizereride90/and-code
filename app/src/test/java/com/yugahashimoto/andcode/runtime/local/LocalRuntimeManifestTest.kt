@@ -7,8 +7,9 @@ import org.junit.Test
 class LocalRuntimeManifestTest {
     private val architecture =
         LocalRuntimeArchitecture(
-            alpineUrl = "https://example.com/alpine.tar.gz",
-            alpineSha256 = "a".repeat(64),
+            debianUrl = "https://registry-1.docker.io/v2/library/debian/blobs/sha256:abc",
+            debianSha256 = "a".repeat(64),
+            debianSizeBytes = 28_117_255,
             openCodeUrl = "https://example.com/opencode.tar.gz",
             openCodeSha256 = "b".repeat(64),
         )
@@ -18,9 +19,9 @@ class LocalRuntimeManifestTest {
         val manifest =
             LocalRuntimeManifest(
                 schemaVersion = 1,
-                runtimeVersion = "2026.07.18.1",
-                openCodeVersion = "1.18.3",
-                alpineVersion = "3.24.1",
+                runtimeVersion = "2026.09.12.1",
+                openCodeVersion = "1.18.30",
+                debianVersion = "12-bookworm-slim",
                 port = 4097,
                 architectures = mapOf("arm64-v8a" to architecture),
             )
@@ -31,8 +32,8 @@ class LocalRuntimeManifestTest {
     }
 
     @Test
-    fun `manifest rejects insecure download URL`() {
-        val invalid = architecture.copy(alpineUrl = "http://example.com/alpine.tar.gz")
+    fun `manifest rejects insecure Debian download URL`() {
+        val invalid = architecture.copy(debianUrl = "http://example.com/debian.tar.gz")
 
         assertThrows(IllegalArgumentException::class.java) {
             invalid.validate("arm64-v8a")
@@ -42,6 +43,15 @@ class LocalRuntimeManifestTest {
     @Test
     fun `manifest rejects invalid hash`() {
         val invalid = architecture.copy(openCodeSha256 = "not-a-hash")
+
+        assertThrows(IllegalArgumentException::class.java) {
+            invalid.validate("arm64-v8a")
+        }
+    }
+
+    @Test
+    fun `manifest rejects non-positive size`() {
+        val invalid = architecture.copy(debianSizeBytes = 0)
 
         assertThrows(IllegalArgumentException::class.java) {
             invalid.validate("arm64-v8a")

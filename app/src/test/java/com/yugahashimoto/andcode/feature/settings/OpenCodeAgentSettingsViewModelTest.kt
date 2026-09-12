@@ -289,7 +289,7 @@ class OpenCodeAgentSettingsViewModelTest {
                     releaseNotes = "Improved Android support",
                     asset =
                         LocalRuntimeReleaseAsset(
-                            name = "opencode-linux-arm64-musl.tar.gz",
+                            name = "opencode-linux-arm64.tar.gz",
                             url = "https://example.test/opencode.tar.gz",
                             sha256 = "a".repeat(64),
                             sizeBytes = 100,

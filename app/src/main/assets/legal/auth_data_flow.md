@@ -8,13 +8,13 @@ that implement each flow, not from how the feature is expected to behave.
 ## OpenCode
 
 - **Binary source:** the official OpenCode release archive, downloaded from
-  `https://github.com/anomalyco/opencode/releases/download/v<version>/opencode-linux-<arch>-musl.tar.gz`,
+  `https://github.com/anomalyco/opencode/releases/download/v<version>/opencode-linux-<arch>.tar.gz`,
   pinned per architecture in
   [`app/src/main/assets/local-runtime-manifest.json`](../app/src/main/assets/local-runtime-manifest.json)
   (`openCodeUrl`, `sha256`).
-- **Install location:** extracted into the app's private on-device Alpine rootfs by
+- **Install location:** extracted into the app's private on-device Debian rootfs by
   `LocalRuntimeInstaller`/`LocalOpenCodeBackend`, after SHA-256 verification.
-- **Launch:** started as a local HTTP server bound to `127.0.0.1:4097` inside the Alpine PRoot
+- **Launch:** started as a local HTTP server bound to `127.0.0.1:4097` inside the Debian PRoot
   sandbox (`LocalOpenCodeBackend`); AndCode talks to it over `OpenCodeApiClient` like any OpenCode
   client would. For **remote OpenCode**, AndCode instead connects to an OpenCode server you already
   run on your own PC/Mac/Linux (`RemoteOpenCodeBackend`), given a URL/username/password you supply.
@@ -32,7 +32,7 @@ that implement each flow, not from how the feature is expected to behave.
   1. A provider API key typed into AndCode's own UI (**Settings → Providers**) for the **local**
      on-device runtime is stored in `EncryptedSharedPreferences`, *and* AndCode's own
      `LocalProviderCredentialStore.syncToRuntime()` writes it into
-     `root/.local/share/opencode/auth.json` inside the on-device Alpine rootfs — the plaintext JSON
+     `root/.local/share/opencode/auth.json` inside the on-device Debian rootfs — the plaintext JSON
      format the local OpenCode process reads. AndCode is the one writing that file in this path, not
      merely relaying to a process that manages it independently.
   2. Provider OAuth obtained through OpenCode's own API (flow above) is managed by the OpenCode
@@ -55,11 +55,12 @@ that implement each flow, not from how the feature is expected to behave.
 
 ## Claude Code
 
-- **Binary source:** the official Claude Code package repository at
-  `https://downloads.claude.ai/claude-code/apk/latest`, verified against Anthropic's signing key
-  (`https://downloads.claude.ai/keys/claude-code.rsa.pub`) — see `ClaudeCodeInstaller`.
-- **Install location:** installed inside the on-device Alpine Linux rootfs (the same rootfs OpenCode
-  uses), via `apk add`.
+- **Binary source:** the official Claude Code package on the npm registry —
+  `@anthropic-ai/claude-code@latest` — installed globally with `npm install --global` into the
+  shared sandbox (the same Debian rootfs OpenCode uses), via `npm` (`/usr/bin/npm`) — see
+  `ClaudeCodeInstaller`.
+- **Install location:** `/usr/local/bin/claude` inside the on-device Debian rootfs; the install is
+  done by `npm` and never by AndCode itself.
 - **Launch:** run as a child process inside the PRoot sandbox by `ClaudeSandboxLauncher`, with a PTY
   when interactive input/output is needed (for example, during sign-in).
 - **Authentication start:** `ClaudeAuthCoordinator.begin()` launches the official CLI with
@@ -71,7 +72,7 @@ that implement each flow, not from how the feature is expected to behave.
   (`submitCode`) — exactly what happens if you typed it into a real terminal. AndCode never sees or
   needs the underlying OAuth token to do this.
 - **Where the OAuth token is stored:** entirely inside the Claude Code CLI's own credential store,
-  inside the on-device Alpine rootfs, written by the CLI itself the same way it would be on any
+  inside the on-device Debian rootfs, written by the CLI itself the same way it would be on any
   Linux machine. AndCode's code does not read, parse, or copy this file.
 - **What AndCode reads:** the CLI's terminal output (to detect the sign-in URL, confirmation code
   prompt, and success/failure), and the result of `claude auth status --text` to display which
@@ -91,9 +92,9 @@ that implement each flow, not from how the feature is expected to behave.
 - **Binary source:** the official `agy` CLI release archive, downloaded from
   `https://github.com/google-antigravity/antigravity-cli/releases/download/<version>/agy_cli_linux_<arch>.tar.gz`,
   pinned in `AntigravityManifest` with a SHA-256 hash checked by `VerifiedRuntimeDownloader`.
-- **Install location:** extracted into a dedicated **Debian Bookworm** rootfs at
-  `usr/local/bin/agy` (Antigravity needs glibc, unlike OpenCode/Claude Code's Alpine/musl
-  environment) — see `AntigravityInstaller`, `DebianRootfsInstaller`.
+- **Install location:** extracted into a **dedicated Debian Bookworm** rootfs at
+  `usr/local/bin/agy` — see `AntigravityInstaller`, `DebianRootfsInstaller`. The official `agy`
+  binary itself requires glibc, which is why the shared sandbox is Debian rather than musl-based.
 - **Launch:** run as a PTY child process inside the Debian PRoot sandbox by
   `AntigravitySandboxLauncher`. `AGY_CLI_DISABLE_AUTO_UPDATE=1` is set so version updates stay
   app-controlled instead of the CLI updating itself.

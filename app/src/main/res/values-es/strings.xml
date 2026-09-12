@@ -410,7 +410,7 @@
     <string name="notification_channel_local_runtime_description">Estado de OpenCode ejecutándose en este dispositivo Android</string>
 
     <string name="install_step_preparing_command_env">Preparando el entorno de comandos de Android</string>
-    <string name="install_step_downloading_alpine">Descargando Alpine Linux</string>
+    <string name="install_step_downloading_debian">Descargando Debian Linux</string>
     <string name="install_step_downloading_opencode">Descargando OpenCode</string>
     <string name="install_step_extracting_linux_env">Extrayendo el entorno Linux</string>
     <string name="install_step_extracting_opencode">Extrayendo OpenCode</string>
@@ -773,7 +773,7 @@
     <!-- Command palette & search -->
     <string name="search_label">Search</string>
     <!-- Terminal -->
-    <string name="terminal_banner">OpenCode Terminal - PRoot Alpine Linux</string>
+    <string name="terminal_banner">Terminal de OpenCode - PRoot Debian Linux</string>
     <string name="terminal_exit_code">exit code: %1$d</string>
 
     <!-- Workspace explorer tabs -->

@@ -4,18 +4,18 @@
 
 AndCodeは、PCへ接続しなくてもAndroid端末内でOpenCodeを起動し、PCリモート実行と同じチャット・セッション・承認UIから操作できる。
 
-OpenCode本体はフォークしない。アプリ専用ストレージ内へLinuxユーザーランドを構築し、その内部でOpenCode公式musl配布物を実行する。
+OpenCode本体はフォークしない。アプリ専用ストレージ内へLinuxユーザーランドを構築し、その内部でOpenCode公式glibc配布物を実行する。
 
 ## 現在の実装
 
 現在のAPKには、AndroidローカルOpenCodeをセットアップして利用するための次の機能が入っている。
 
 - arm64-v8a・x86_64向けPRootランナー
-- Alpine Linux 3.24.1 minirootfsのダウンロード
-- OpenCode 1.18.3公式muslバイナリのダウンロード
+- Debian 12（Bookworm slim）rootfsのダウンロード
+- OpenCode 1.18.3公式glibcバイナリのダウンロード
 - URL・サイズ・SHA-256を固定したランタイムマニフェスト
 - 一時領域への展開と、成功後だけ本番環境へ切り替えるインストール
-- Alpine内へのGit、Bash、curl、OpenSSH client、CA証明書、ripgrep、libstdc++導入
+- Debian内へのGit、Bash、curl、OpenSSH client、CA証明書、ripgrep、libstdc++導入
 - `127.0.0.1:4097`限定のOpenCodeサーバー起動
 - Foreground Serviceによるセットアップ・起動・停止・稼働監視・自動復旧
 - 未導入、導入中、起動中、停止中、稼働中、破損、未対応ABIの状態管理
@@ -65,7 +65,7 @@ files/runtime/
 └─ logs/
 ```
 
-PRoot本体・ローダー・必要共有ライブラリは、APKのABI別ネイティブライブラリとして配置する。AlpineとOpenCode本体は初回セットアップ時に取得するため、APKを不必要に大型化しない。
+PRoot本体・ローダー・必要共有ライブラリは、APKのABI別ネイティブライブラリとして配置する。DebianとOpenCode本体は初回セットアップ時に取得するため、APKを不必要に大型化しない。
 
 ## セットアップフロー
 
@@ -76,13 +76,13 @@ ABI・ランタイムマニフェストを確認
 ↓
 Foreground Serviceを開始
 ↓
-AlpineとOpenCodeを一時キャッシュへダウンロード
+DebianとOpenCodeを一時キャッシュへダウンロード
 ↓
 ファイルサイズとSHA-256を検証
 ↓
 ステージング領域へ安全に展開
 ↓
-Alpine内へ必須ツールを導入
+Debian内へ必須ツールを導入
 ↓
 opencode --versionを確認
 ↓
@@ -102,7 +102,7 @@ opencode serve --hostname 127.0.0.1 --port 4097
 ```text
 公式GitHub Release APIから最新版を取得
 ↓
-対象ABIのmusl asset、HTTPS URL、サイズ、SHA-256 digestを検証
+対象ABIのglibc asset、HTTPS URL、サイズ、SHA-256 digestを検証
 ↓
 空き容量を事前確認
 ↓
@@ -127,7 +127,7 @@ API 36 ARM64エミュレーターでは、`targetContext.filesDir`上で実フ�
 
 ## 端末ストレージへのアクセス
 
-サンドボックスが元々見えていたのはアプリ専用ディレクトリだけ（Alpine rootfsと`/workspace`マウント）で、端末内のファイルは一切見えなかった。唯一の経路はSAF取り込みで、これはツリーをアプリ領域へ**コピー**するため、エージェントは元ファイルから切り離された複製を編集していた。
+サンドボックスが元々見えていたのはアプリ専用ディレクトリだけ（Debian rootfsと`/workspace`マウント）で、端末内のファイルは一切見えなかった。唯一の経路はSAF取り込みで、これはツリーをアプリ領域へ**コピー**するため、エージェントは元ファイルから切り離された複製を編集していた。
 
 全ファイルアクセス（`MANAGE_EXTERNAL_STORAGE`）を許可すると、端末のストレージがそのままサンドボックスへbindされる。
 
@@ -205,7 +205,7 @@ OpenCodeがOAuthの `auto` 方式を返した場合、Androidはブラウザを�
 
 ### ヘルパースクリプト
 
-ランタイムの `/usr/local/bin` に次が配置される（Alpine・Debian両rootfs）。
+ランタイムの `/usr/local/bin` に次が配置される（共有サンドボックスとAntigravity用rootfsの両方）。
 
 - `android-screenshot` — 画面キャプチャ
 - `android-vision` — UI要素ラベル付きアノテーション画像とJSON

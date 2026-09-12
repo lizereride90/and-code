@@ -410,7 +410,7 @@
     <string name="notification_channel_local_runtime_description">Status do OpenCode em execução neste dispositivo Android</string>
 
     <string name="install_step_preparing_command_env">Preparando o ambiente de comandos do Android</string>
-    <string name="install_step_downloading_alpine">Baixando Alpine Linux</string>
+    <string name="install_step_downloading_debian">Baixando Debian Linux</string>
     <string name="install_step_downloading_opencode">Baixando OpenCode</string>
     <string name="install_step_extracting_linux_env">Extraindo o ambiente Linux</string>
     <string name="install_step_extracting_opencode">Extraindo OpenCode</string>
@@ -773,7 +773,7 @@
     <!-- Command palette & search -->
     <string name="search_label">Search</string>
     <!-- Terminal -->
-    <string name="terminal_banner">OpenCode Terminal - PRoot Alpine Linux</string>
+    <string name="terminal_banner">Terminal do OpenCode - PRoot Debian Linux</string>
     <string name="terminal_exit_code">exit code: %1$d</string>
 
     <!-- Workspace explorer tabs -->
@@ -939,8 +939,8 @@
     <string name="agent_update_result_latest">Já está atualizado (%1$s)</string>
     <string name="antigravity_update_button">Atualizar o Antigravity</string>
     <string name="claude_step_preparing_runtime">Preparando o ambiente Linux</string>
-    <string name="claude_step_adding_repository">Adicionando o repositório de pacotes do Claude Code</string>
-    <string name="claude_step_downloading_package">Baixando o Claude Code (cerca de 80 MB)</string>
+    <string name="claude_step_adding_repository">Preparando a instalação do Claude Code</string>
+    <string name="claude_step_downloading_package">Baixando o Claude Code</string>
     <string name="claude_step_verifying">Verificando a instalação</string>
     <string name="claude_installed_version">Claude Code %1$s</string>
     <string name="antigravity_installed_version">Antigravity %1$s</string>

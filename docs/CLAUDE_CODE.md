@@ -1,12 +1,12 @@
 # Claude Code on Android
 
-Claude Code is a second local runtime target. It reuses the Alpine Linux rootfs, PRoot launcher,
+Claude Code is a second local runtime target. It reuses the Debian Linux rootfs, PRoot launcher,
 `/workspace` bind mount, command environment and logs that the local OpenCode runtime already
 installs. The APK does not contain or redistribute a Claude binary.
 
 ## Agents are selectable
 
-The Alpine sandbox is shared, but the agents inside it are not. `LocalRuntimeMetadata.components`
+The Debian sandbox and PRoot launcher are shared, but the agents inside it are not. `LocalRuntimeMetadata.components`
 records which of `opencode` / `claude-code` is provisioned, and `LocalRuntimeInstaller.install`
 downloads the OpenCode binary only when OpenCode is among the requested agents — so a Claude
 Code-only setup skips a download it would never use. Installing one agent later never removes the
@@ -18,65 +18,54 @@ afterwards.
 
 ## Installation
 
-The app adds Anthropic's official signed Alpine repository key and stable repository inside the
-existing rootfs, then installs the package:
+Anthropic publishes Claude Code on npm, so the app installs the official package into the existing
+rootfs with the sandbox's own `npm`:
 
 ```sh
-wget -qO /etc/apk/keys/claude-code.rsa.pub https://downloads.claude.ai/keys/claude-code.rsa.pub
-# https://downloads.claude.ai/claude-code/apk/stable appended to /etc/apk/repositories, once
-/sbin/apk update
-/sbin/apk fix
-/sbin/apk add --no-cache claude-code util-linux
+/usr/bin/npm install -g --prefix /usr/local --no-fund --no-audit @anthropic-ai/claude-code@latest
+/usr/local/bin/claude --version
 ```
 
-Two details are load-bearing and were wrong in earlier revisions:
+Two details are load-bearing:
 
-- **`apk` is invoked by absolute path.** The sandbox's `/etc/profile.d/and-code.sh` narrows
-  `PATH` to `/usr/local/bin:/usr/bin:/bin`, which excludes `/sbin` where `apk` lives. The install
-  script also runs under `sh -c` rather than `sh -lc` so that profile never applies.
-- **The package installs `claude` to `/usr/bin`, not `/usr/local/bin`** (where the OpenCode binary is
-  copied). `ClaudeCodeInstaller.CLAUDE_BINARY` is the single source of truth for the path.
+- **`npm` is a strict permission-solver.** A failed install is reported as-is (the registry error
+  lines, deduplicated by `ClaudeCodeInstaller.extractPackageErrors`) and retried, rather than swept
+  under an exit code the way apk's broken-package accounting was. There is no package database that
+  can be poisoned by PRoot's hard-link emulation, so `npm` either completes or names what happened.
+- **`--prefix /usr/local` fixes the binary path.** Without it npm would place the package under
+  `/usr/local/lib/node_modules` whose `bin` entries fall outside the sandbox's `PATH` contract, and
+  the launcher would not find `claude`. `ClaudeCodeInstaller.CLAUDE_BINARY` is the single source of
+  truth for the path (it is what `ClaudeSandboxLauncher`, MCP and sign-in all use).
 
-Updates use `apk add --no-cache --upgrade claude-code`. `USE_BUILTIN_RIPGREP=0` is set because the
-bundled ripgrep is a glibc build that cannot run on musl; the sandbox provides Alpine's ripgrep.
+Updates re-run the same global install: npm is idempotent on an up-to-date package, and the `@latest`
+pinned channel means an update always resolves against the current release. Node.js and npm are part
+of the shared toolchain (`nodejs`, `npm` via apt when Claude Code is requested); existing minimal
+runtimes that predate that get them installed on demand. `USE_BUILTIN_RIPGREP=0` is set because the
+bundled ripgrep is built for the host's architecture/features and the sandbox provides Debian's
+ripgrep instead.
 
-### Broken packages poison every later apk run
+### A failed transaction leaves nothing behind
 
-A package whose files or scripts failed to extract keeps an `f:f` / `f:s` flag in
-`/lib/apk/db/installed` — which is how a package broken by PRoot's hard-link emulation was recorded.
-apk counts one error per flagged package in **every** transaction it commits afterwards, even a `-s`
-simulation and even when the flagged package has nothing to do with the request. The transaction then
-exits non-zero having printed only:
+With apk, a package broken by the extractor kept a flag that poisoned every later transaction. npm
+keeps no such state: the global install either completes, or its exit code and the registry error
+lines are reported and the operation is retried.
 
-```text
-1 error; 2322.8 MiB in 392 packages
-```
-
-That is why an up-to-date sandbox could still fail to update, with no error naming anything. Two
-consequences for these scripts:
-
-- **`apk fix` runs with no arguments**, so it reinstalls exactly the flagged packages. `apk fix <pkg>`
-  reinstalls that one and still trips over everybody else's flag, so it can never clear the failure —
-  and under `set -e` its own exit code aborted the update before the upgrade was attempted.
-- **A non-zero `apk` status is not by itself a failure.** The scripts verify what was asked for
-  instead: `apk info -e` for a fresh install, and `apk version -q -l '<' claude-code` (a read-only
-  query, so broken flags cannot skew it) for an update. Only if that check fails, or `claude
-  --version` does not run, is the operation reported as failed.
-
-The failure diagnostics list the flagged packages, since apk names a package when it breaks it but
-never when it later refuses to work because of the flag.
+The script therefore has no reason to paper over a non-zero exit. It verifies what was asked for with
+`claude --version` at the end, and only that check failing (or the binary not appearing at
+`/usr/local/bin/claude`) is reported as a failure — the diagnostics append `npm list -g --depth=0`
+and a `df -h /` so the state of the sandbox is visible in the log tail.
 
 ### The card reports which version an update landed on
 
-`apk` upgrades in place and reports nothing about the version, so an update that had nothing to do
-and one that installed a new build were indistinguishable — the button stopped spinning either way.
+`npm` re-installs the package and reports nothing about the version, so an update that had nothing to
+do and one that installed a new build were indistinguishable — the button stopped spinning either way.
 `ClaudeCodeTarget.update` therefore reads `claude --version` on both sides of the upgrade and returns
 a `ClaudeUpdateResult`: `Updated(from, to)` when the version moved, `AlreadyLatest(version)` when it
 did not. The card shows the installed version next to the update button and the outcome underneath.
 
-"Already up to date" is a claim the update script has verified, not an assumption: the script only
-succeeds once `apk version -q -l '<' claude-code` reports nothing pending, so a version that did not
-move means the repository has nothing newer.
+"Already up to date" is read from the sandbox, not assumed: the command's own version check runs
+inside the guest immediately after the idempotent `npm install` runs, so a version that did not move
+means the registry had nothing newer (or the same `@latest` resolved again).
 
 ## Execution
 
@@ -123,7 +112,7 @@ See `docs/superpowers/specs/2026-08-08-claude-code-opencode-local-parity-design.
 
 `claude auth login` is interactive: it prints an authorization URL, waits for browser approval, then
 reads back the code the browser shows. There is no browser inside PRoot, so the app plays that role.
-`ClaudeAuthCoordinator` runs the command under a pseudo-terminal (Alpine `util-linux`'s `script`,
+`ClaudeAuthCoordinator` runs the command under a pseudo-terminal (Debian `bsdutils`'s `script`,
 required because the CLI only prints a pasteable URL when it believes a human is watching), captures
 the URL, hands it to Android via `ACTION_VIEW`, and writes the pasted code back to the CLI's stdin.
 Success is confirmed against `claude auth status`, not inferred from the exit code.

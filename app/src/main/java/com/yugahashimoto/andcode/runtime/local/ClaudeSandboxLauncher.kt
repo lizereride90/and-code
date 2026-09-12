@@ -4,7 +4,7 @@ import com.yugahashimoto.andcode.core.storage.DeviceStorage
 import java.io.File
 
 /**
- * Builds PRoot invocations for the Claude Code binary inside the shared Alpine sandbox.
+ * Builds PRoot invocations for the Claude Code binary inside the shared Debian sandbox.
  *
  * Centralised so the binary path and the bind mounts stay identical across the chat process, the
  * sign-in flow and version checks — a mismatch there is invisible until the process fails to start.
@@ -91,8 +91,8 @@ object ClaudeSandboxLauncher {
     ): Map<String, String> =
         localRuntimeEnvironment(runtime.commandSuite.environment(), prootTmp, githubToken) +
             mapOf(
-                // The bundled ripgrep is a glibc build and cannot run on musl; the sandbox installs
-                // Alpine's ripgrep instead.
+                // The bundled ripgrep is a glibc build flagged for the host's CPU features; the
+                // sandbox installs Debian's ripgrep instead.
                 "USE_BUILTIN_RIPGREP" to "0",
                 "CLAUDE_CODE_DISABLE_AUTOUPDATER" to "1",
                 // PRoot presents a fake uid 0, and Claude Code refuses bypassPermissions as root

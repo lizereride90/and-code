@@ -25,7 +25,7 @@ you and the AI provider you configure.
   storage (SQLite/local catalog) so sessions survive an app restart. Schedule definitions and run
   history are stored in Keystore-backed `EncryptedSharedPreferences`.
 - **Claude Code and Antigravity credentials are not stored by AndCode at all.** Each official CLI
-  manages its own OAuth/token storage inside the on-device Linux (Alpine) or Debian rootfs it runs
+  manages its own OAuth/token storage inside the on-device Debian rootfs it runs
   in — for example, Antigravity's guest token lives at `root/.gemini/antigravity-cli/antigravity-oauth-token`
   inside its rootfs, and Claude Code keeps its own credential store the same way it would on a
   desktop Linux machine. AndCode does not read, copy, or mirror the contents of these files into
@@ -39,7 +39,7 @@ you and the AI provider you configure.
   are stored with `EncryptedSharedPreferences` as described above.
 - **If you use OpenCode's local (on-device) runtime,** a provider API key you enter is stored in two
   places: `EncryptedSharedPreferences` (as above) and — via `LocalProviderCredentialStore.syncToRuntime()`
-  — synced in plaintext into `root/.local/share/opencode/auth.json` inside the on-device Alpine
+  — synced in plaintext into `root/.local/share/opencode/auth.json` inside the on-device Debian
   rootfs, because that is the file format the local OpenCode process itself reads to authenticate to
   the provider. That file is only as protected as the app's private rootfs directory (not additionally
   encrypted at rest the way `EncryptedSharedPreferences` is). See

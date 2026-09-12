@@ -66,12 +66,12 @@ AndCode is a native Android GUI app that brings AI coding agents to your phone. 
 | [Claude Code](https://github.com/anthropics/claude-code) | ✓ | — | Beta |
 | [Google Antigravity](https://github.com/google-antigravity/antigravity-cli) | ✓ | — | Beta |
 
-On-device agents run inside a Linux environment via PRoot. OpenCode and Claude Code use Alpine Linux; Google Antigravity additionally installs a Debian Bookworm rootfs alongside Alpine, since the official `agy` binary links against glibc.
+On-device agents run inside a Linux environment via PRoot. OpenCode, Claude Code, and Google Antigravity share a Debian Bookworm rootfs, since the official `agy` binary and the OpenCode CLI link against glibc.
 
 ## Features
 
 - **Native Android GUI** — Touch-first interface for coding agents; no CLI or terminal required for day-to-day use
-- **On-device runtime** — Alpine Linux, Git, bash, curl, ripgrep, and coding agents auto-installed on your Android device via PRoot
+- **On-device runtime** — Debian Linux, Git, bash, curl, ripgrep, and coding agents auto-installed on your Android device via PRoot
 - **Repository & workspace** — Open git repositories on-device, browse the file tree, and view files with syntax highlighting
 - **Device files** — Grant all-files access and the whole phone (`/sdcard`, SD cards, USB drives) becomes browsable in the folder picker and reachable by the agent, opened in place instead of copied into the app
 - **Git support** — Browse status and review diffs from the GUI; use the embedded runtime terminal for other Git operations
@@ -93,7 +93,7 @@ On-device agents run inside a Linux environment via PRoot. OpenCode and Claude C
 
 ## Antigravity
 
-Google Antigravity (`agy`) runs on-device inside the same PRoot environment. Unlike OpenCode and Claude Code which run in Alpine Linux, Antigravity uses a Debian Bookworm rootfs for glibc compatibility with the official CLI binary.
+Google Antigravity (`agy`) runs on-device inside the same PRoot environment. It installs its own dedicated Debian Bookworm rootfs alongside the shared sandbox, which is also Debian-based for glibc compatibility with the official CLI binaries.
 
 - **OAuth sign-in** — Authenticate via the browser URL + one-time code flow; credentials are stored only in the Linux rootfs (`~/.gemini`), never in Android preferences
 - **Model selection** — Live model catalog fetched from the signed-in `agy` instance (Gemini, Claude, GPT-OSS variants)
@@ -174,19 +174,19 @@ Then scan it from **Workspaces** → **Add via QR** in the app.
 The setup process (triggered from Workspaces):
 
 1. Verifies the native PRoot runner bundled in the APK
-2. Downloads Alpine Linux minirootfs from the official CDN
+2. Downloads the Debian Bookworm slim rootfs (OCI image) from Docker Hub
 3. Downloads the agent binary from GitHub Releases
 4. Validates SHA-256 checksums for both
 5. Extracts to a private app directory
-6. Installs Git, bash, curl, ripgrep, and CA certificates inside Alpine
+6. Installs Git, bash, curl, ripgrep, and CA certificates inside Debian
 7. Starts the agent server on `127.0.0.1:4097`
 8. Switches the app to the local runtime
 
 Pinned versions (updatable via app releases without agent changes; see [`local-runtime-manifest.json`](app/src/main/assets/local-runtime-manifest.json)):
 
-- Alpine Linux 3.24.1
-- OpenCode 1.18.5
-- Google Antigravity CLI 1.1.7 (Debian Bookworm rootfs)
+- Debian 12 (Bookworm slim)
+- OpenCode 1.18.30
+- Google Antigravity CLI 1.1.7 (dedicated Debian Bookworm rootfs)
 - Architectures: arm64-v8a, x86_64
 
 ## Handoff (Runtime Switching Mid-Conversation)

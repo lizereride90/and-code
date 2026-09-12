@@ -69,16 +69,16 @@ installed and run.
 
 | Component | Source | License | Notes |
 |---|---|---|---|
-| OpenCode | `github.com/anomalyco/opencode` releases (musl Linux binary; URL/version pinned in [`app/src/main/assets/local-runtime-manifest.json`](app/src/main/assets/local-runtime-manifest.json)) | See [anomalyco/opencode](https://github.com/anomalyco/opencode) for the current license | AndCode integrates OpenCode as an independent third-party coding agent runtime; not affiliated with the OpenCode project |
-| Claude Code | `downloads.claude.ai/claude-code/apk/latest` (Anthropic's official Alpine package repository, signature-verified) | Proprietary; governed by Anthropic's own Claude Code terms | Official CLI, unmodified; AndCode does not fork or re-host it |
+| OpenCode | `github.com/anomalyco/opencode` releases (glibc Linux binary; URL/version pinned in [`app/src/main/assets/local-runtime-manifest.json`](app/src/main/assets/local-runtime-manifest.json)) | See [anomalyco/opencode](https://github.com/anomalyco/opencode) for the current license | AndCode integrates OpenCode as an independent third-party coding agent runtime; not affiliated with the OpenCode project |
+| Claude Code | `@anthropic-ai/claude-code` on the npm registry, installed globally with `npm` (`/usr/bin/npm`), latest channel | Proprietary; governed by Anthropic's own Claude Code terms | Official CLI, unmodified; AndCode does not fork or re-host it |
 | Google Antigravity CLI | `github.com/google-antigravity/antigravity-cli` releases (pinned in `AntigravityManifest.kt`, currently 1.1.7) | Proprietary; governed by Google Antigravity's own terms | Official CLI, unmodified; AndCode does not fork or re-host it |
 
 ## Base Linux root filesystems
 
 | Component | Source | License | Notes |
 |---|---|---|---|
-| Alpine Linux minirootfs | `dl-cdn.alpinelinux.org` (version pinned in [`local-runtime-manifest.json`](app/src/main/assets/local-runtime-manifest.json), currently 3.24.1) | Each Alpine package keeps its own upstream license (mix of MIT, BSD, GPL, and others); see [alpinelinux.org](https://alpinelinux.org/) and each package's `APKINDEX`/`.PKGINFO` metadata | Used as the rootfs for OpenCode and Claude Code |
-| Debian Bookworm rootfs (bootstrap + packages) | Official Debian mirrors (`deb.debian.org`, `security.debian.org`), fetched via `apt` at setup time — see `DebianRootfsInstaller.kt` | Each Debian package keeps its own upstream license (mix of GPL, LGPL, MIT, BSD, and others); see [debian.org/legal](https://www.debian.org/legal/) | Used only for the Antigravity CLI, which requires glibc |
+| Debian Bookworm slim rootfs (bootstrap) | `registry-1.docker.io` OCI image (`debian:12-bookworm-slim`, version `12-bookworm-slim` pinned in [`local-runtime-manifest.json`](app/src/main/assets/local-runtime-manifest.json)) | Debian itself is GPL-2.0; see [debian.org/legal](https://www.debian.org/legal/) | Used as the base rootfs for OpenCode, Claude Code, and Antigravity |
+| Debian Bookworm packages | Official Debian mirrors (`deb.debian.org`, `security.debian.org`), fetched via `apt` at setup time | Each Debian package keeps its own upstream license (mix of GPL, LGPL, MIT, BSD, and others); see [debian.org/legal](https://www.debian.org/legal/) | Installed into the shared sandbox and the Antigravity rootfs at setup time — see `LocalRuntimeInstaller.kt`/`DebianRootfsInstaller.kt` |
 
 ## Gradle / Android dependencies
 

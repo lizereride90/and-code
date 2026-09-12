@@ -33,7 +33,7 @@ import java.io.File
 import java.util.UUID
 
 /**
- * Runs Claude Code inside the shared Alpine/PRoot sandbox.
+ * Runs Claude Code inside the shared Debian/PRoot sandbox.
  *
  * The CLI is driven in streaming-JSON mode (`--print --input-format stream-json --output-format
  * stream-json`), which keeps one process alive per chat session and exchanges structured messages

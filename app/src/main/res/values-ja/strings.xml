@@ -408,7 +408,7 @@
     <string name="notification_channel_local_runtime_description">Android端末内で実行するローカルランタイムの状態</string>
 
     <string name="install_step_preparing_command_env">Androidコマンド環境を準備しています</string>
-    <string name="install_step_downloading_alpine">Alpine Linuxをダウンロードしています</string>
+    <string name="install_step_downloading_debian">Debian Linuxをダウンロードしています</string>
     <string name="install_step_downloading_opencode">OpenCodeをダウンロードしています</string>
     <string name="install_step_extracting_linux_env">Linux環境を展開しています</string>
     <string name="install_step_extracting_opencode">OpenCodeを展開しています</string>
@@ -781,7 +781,7 @@
 
     <string name="search_label">検索</string>
     <!-- Terminal -->
-    <string name="terminal_banner">OpenCode ターミナル - PRoot Alpine Linux</string>
+    <string name="terminal_banner">OpenCode ターミナル - PRoot Debian Linux</string>
     <string name="terminal_exit_code">終了コード: %1$d</string>
 
     <!-- Workspace explorer tabs -->
@@ -947,8 +947,8 @@
     <string name="agent_update_result_latest">最新です (%1$s)</string>
     <string name="antigravity_update_button">Antigravityを更新</string>
     <string name="claude_step_preparing_runtime">Linux環境を準備しています</string>
-    <string name="claude_step_adding_repository">Claude Codeのパッケージリポジトリを追加しています</string>
-    <string name="claude_step_downloading_package">Claude Codeをダウンロードしています（約80MB）</string>
+    <string name="claude_step_adding_repository">Claude Codeのインストールを準備中</string>
+    <string name="claude_step_downloading_package">Claude Codeをダウンロードしています</string>
     <string name="claude_step_verifying">インストールを検証しています</string>
     <string name="claude_installed_version">Claude Code %1$s</string>
     <string name="antigravity_installed_version">Antigravity %1$s</string>

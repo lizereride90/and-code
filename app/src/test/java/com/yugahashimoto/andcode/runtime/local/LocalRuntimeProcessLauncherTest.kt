@@ -14,7 +14,7 @@ class LocalRuntimeProcessLauncherTest {
     val temporaryFolder = TemporaryFolder()
 
     @Test
-    fun `guest environment exposes Alpine tools and root home`() {
+    fun `guest environment exposes Debian tools and root home`() {
         val environment =
             localRuntimeEnvironment(
                 suiteEnvironment =
@@ -357,7 +357,7 @@ class LocalRuntimeProcessLauncherTest {
         assertTrue("PATH must contain /system/bin", "/system/bin" in entries)
         assertTrue("PATH must contain /system/xbin", "/system/xbin" in entries)
         assertTrue(
-            "Alpine paths must precede Android system paths",
+            "Debian paths must precede Android system paths",
             entries.indexOf("/usr/local/bin") < entries.indexOf("/system/bin"),
         )
     }

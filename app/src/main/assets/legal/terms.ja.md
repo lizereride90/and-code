@@ -35,7 +35,7 @@ AndCodeの端末内またはリモートのエージェント機能は、この�
 
 ## 6. MITライセンスの適用範囲
 
-このリポジトリにあるAndCode自身のソースコードは、[MITライセンス](LICENSE)の下で提供されています。このライセンスが適用されるのはAndCodeのKotlin／Androidソースコードのみです。AndCodeがインストールまたは起動する第三者製CLI、バイナリ、ランタイム、パッケージ（Claude Code、Google Antigravity、OpenCode、PRoot、Alpine／Debianパッケージなど）には、このライセンスは**適用されず**、再ライセンスされることもなく、これらに対する権利を付与するものでもありません。それぞれ独自の配布元ライセンスおよび規約に従います。詳細は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)および[TRADEMARKS.md](TRADEMARKS.md)を参照してください。
+このリポジトリにあるAndCode自身のソースコードは、[MITライセンス](LICENSE)の下で提供されています。このライセンスが適用されるのはAndCodeのKotlin／Androidソースコードのみです。AndCodeがインストールまたは起動する第三者製CLI、バイナリ、ランタイム、パッケージ（Claude Code、Google Antigravity、OpenCode、PRoot、Debianパッケージなど）には、このライセンスは**適用されず**、再ライセンスされることもなく、これらに対する権利を付与するものでもありません。それぞれ独自の配布元ライセンスおよび規約に従います。詳細は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)および[TRADEMARKS.md](TRADEMARKS.md)を参照してください。
 
 ## 7. 本規約の変更
 

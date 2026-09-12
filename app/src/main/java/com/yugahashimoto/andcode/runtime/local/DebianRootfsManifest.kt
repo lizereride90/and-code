@@ -13,7 +13,7 @@ data class DebianPackageAsset(
     val sizeBytes: Long,
 )
 
-/** Pinned Debian Bookworm slim OCI layers used when Alpine gcompat cannot load agy. */
+/** Pinned Debian Bookworm slim OCI layers, used for the Antigravity rootfs and the shared sandbox. */
 object DebianRootfsManifest {
     private const val TOKEN_URL = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/debian:pull"
     private const val BLOB_BASE = "https://registry-1.docker.io/v2/library/debian/blobs/"

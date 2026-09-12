@@ -32,7 +32,7 @@ class LocalRuntimeReleaseClientTest {
     }
 
     @Test
-    fun `selects exact arm64 musl asset and returns available release`() =
+    fun `selects the exact arm64 glibc asset and returns available release`() =
         runTest {
             server.enqueue(
                 MockResponse().setResponseCode(200).setBody(
@@ -42,7 +42,7 @@ class LocalRuntimeReleaseClientTest {
                         assets =
                             listOf(
                                 asset("opencode-linux-arm64.tar.gz", "a".repeat(64)),
-                                asset("opencode-linux-arm64-musl.tar.gz", "b".repeat(64), size = 57_000_000),
+                                asset("opencode-linux-arm64.tar.gz", "b".repeat(64), size = 60_366_998),
                             ),
                     ),
                 ),
@@ -55,7 +55,7 @@ class LocalRuntimeReleaseClientTest {
             assertEquals("1.18.3", available.currentVersion)
             assertEquals("1.19.0", available.release.version)
             assertEquals("release notes", available.release.releaseNotes)
-            assertEquals("opencode-linux-arm64-musl.tar.gz", available.release.asset.name)
+            assertEquals("opencode-linux-arm64.tar.gz", available.release.asset.name)
             assertEquals("b".repeat(64), available.release.asset.sha256)
             assertEquals(57_000_000, available.release.asset.sizeBytes)
             val request = server.takeRequest()
@@ -71,7 +71,7 @@ class LocalRuntimeReleaseClientTest {
                     releaseJson(
                         tag = "v1.18.3",
                         notes = "same",
-                        assets = listOf(asset("opencode-linux-x64-musl.tar.gz", "c".repeat(64))),
+                        assets = listOf(asset("opencode-linux-x64.tar.gz", "c".repeat(64))),
                     ),
                 ),
             )
@@ -92,7 +92,7 @@ class LocalRuntimeReleaseClientTest {
                     releaseJson(
                         tag = "v1.19.0",
                         notes = "x".repeat(40),
-                        assets = listOf(asset("opencode-linux-arm64-musl.tar.gz", "d".repeat(64))),
+                        assets = listOf(asset("opencode-linux-arm64.tar.gz", "d".repeat(64))),
                     ),
                 ),
             )
@@ -113,7 +113,7 @@ class LocalRuntimeReleaseClientTest {
                         tag = "v1.19.0",
                         assets =
                             listOf(
-                                """{"name":"opencode-linux-arm64-musl.tar.gz","size":100,"browser_download_url":"https://github.com/anomalyco/opencode/releases/download/v1.19.0/opencode-linux-arm64-musl.tar.gz","digest":null}""",
+                                """{"name":"opencode-linux-arm64.tar.gz","size":100,"browser_download_url":"https://github.com/anomalyco/opencode/releases/download/v1.19.0/opencode-linux-arm64.tar.gz","digest":null}""",
                             ),
                     ),
                 ),
@@ -134,7 +134,7 @@ class LocalRuntimeReleaseClientTest {
                         assets =
                             listOf(
                                 asset(
-                                    name = "opencode-linux-arm64-musl.tar.gz",
+                                    name = "opencode-linux-arm64.tar.gz",
                                     digest = "e".repeat(64),
                                     url = "http://example.com/opencode.tar.gz",
                                 ),

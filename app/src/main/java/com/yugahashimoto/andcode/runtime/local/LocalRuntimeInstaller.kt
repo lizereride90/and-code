@@ -1,14 +1,16 @@
 package com.yugahashimoto.andcode.runtime.local
 
 import android.content.Context
-import android.system.Os
 import com.yugahashimoto.andcode.R
 import com.yugahashimoto.andcode.runtime.LocalAgent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -40,7 +42,7 @@ class LocalRuntimeInstaller(
     )
 
     /**
-     * Provisions the shared Alpine sandbox and the requested [agents].
+     * Provisions the shared Debian sandbox and the requested [agents].
      *
      * Agents already recorded in the current install are carried over, so adding one never silently
      * removes another. The OpenCode binary — by far the largest download — is fetched only when
@@ -51,7 +53,7 @@ class LocalRuntimeInstaller(
         installFullDevelopmentTools: Boolean = false,
         /**
          * Progress, the step to show, and which agent that step belongs to - null for the shared
-         * Alpine environment every agent runs in. One install provisions the whole selection, so
+         * Debian environment every agent runs in. One install provisions the whole selection, so
          * without the third argument the setup guide attributed every step to OpenCode and showed
          * "Installing Claude Code" underneath the OpenCode heading.
          */
@@ -95,15 +97,18 @@ class LocalRuntimeInstaller(
             staging.mkdirs()
 
             try {
-                val alpineArchive = File(cache, "alpine-${manifest.alpineVersion}-$abi.tar.gz")
+                val debianArchive = File(cache, "debian-${manifest.debianVersion}-$abi.tar.gz")
                 download(
-                    architecture.alpineUrl,
-                    alpineArchive,
-                    architecture.alpineSha256,
-                    0.05f,
-                    0.22f,
-                    context.getString(R.string.install_step_downloading_alpine),
-                    onShared,
+                    url = architecture.debianUrl,
+                    destination = debianArchive,
+                    expectedSha256 = architecture.debianSha256,
+                    expectedSizeBytes = architecture.debianSizeBytes,
+                    startProgress = 0.05f,
+                    endProgress = 0.22f,
+                    label = context.getString(R.string.install_step_downloading_debian),
+                    onProgress = onShared,
+                    // registry-1.docker.io only serves the OCI blob to requests carrying a token.
+                    headers = mapOf("Authorization" to "Bearer ${accessToken()}"),
                 )
                 val withOpenCode = LocalAgent.OPEN_CODE in requestedAgents
                 val openCodeArchive =
@@ -121,7 +126,7 @@ class LocalRuntimeInstaller(
 
                 val rootfs = File(staging, "rootfs").apply { mkdirs() }
                 onShared(0.75f, context.getString(R.string.install_step_extracting_linux_env))
-                alpineArchive.inputStream().use { RuntimeArchive.extractTarGz(it, rootfs) }
+                debianArchive.inputStream().use { RuntimeArchive.extractTarGz(it, rootfs) }
 
                 val openCodeBinary =
                     openCodeArchive?.let { archive ->
@@ -170,11 +175,21 @@ class LocalRuntimeInstaller(
                     rootfs = rootfs,
                     suite = commandSuite,
                     packages =
-                        if (includeFullDevelopmentTools) {
-                            REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
-                        } else {
-                            REQUIRED_RUNTIME_PACKAGES
-                        },
+                        buildList {
+                            addAll(
+                                if (includeFullDevelopmentTools) {
+                                    REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
+                                } else {
+                                    REQUIRED_RUNTIME_PACKAGES
+                                },
+                            )
+                            // Claude Code installs through npm, so its runtime needs Node.js even on
+                            // the otherwise-minimal default install.
+                            if (LocalAgent.CLAUDE_CODE in requestedAgents) {
+                                add("nodejs")
+                                add("npm")
+                            }
+                        }.distinct(),
                 )
                 if (LocalAgent.CLAUDE_CODE in requestedAgents) {
                     onClaude(0.93f, context.getString(R.string.install_step_installing_claude_code))
@@ -398,6 +413,8 @@ class LocalRuntimeInstaller(
         endProgress: Float,
         label: String,
         onProgress: (Float?, String) -> Unit,
+        expectedSizeBytes: Long? = null,
+        headers: Map<String, String> = emptyMap(),
     ) {
         if (destination.isFile) {
             runCatching { RuntimeArchive.verifySha256(destination, expectedSha256) }
@@ -411,6 +428,8 @@ class LocalRuntimeInstaller(
             url = url,
             destination = destination,
             expectedSha256 = expectedSha256,
+            expectedSizeBytes = expectedSizeBytes,
+            headers = headers,
             onProgress = { fraction ->
                 onProgress(
                     fraction?.let {
@@ -423,14 +442,42 @@ class LocalRuntimeInstaller(
         onProgress(endProgress, label)
     }
 
+    private fun accessToken(): String {
+        val request = Request.Builder().url(DebianRootfsManifest.tokenUrl).get().build()
+        httpClient.newCall(request).execute().use { response ->
+            require(response.isSuccessful) { "Debian registry token request failed with HTTP ${response.code}" }
+            val body = requireNotNull(response.body).string()
+            return Json.parseToJsonElement(body).jsonObject["token"]?.jsonPrimitive?.content
+                ?: error("Debian registry token response did not contain a token")
+        }
+    }
+
+    /**
+     * Installs [packages] into the shared Debian rootfs with apt-get, running under the guest's own
+     * `bash` so the transaction survives whatever is wrong with the extracted image. `gh` needs an
+     * extra apt source that bookworm carries no package for, so it is installed separately.
+     */
     private fun installPackages(
         rootfs: File,
         suite: EmbeddedCommandSuite.Paths,
         packages: List<String>,
     ) {
         val prootTmp = File(runtimeDirectory, "proot-tmp").apply { mkdirs() }
-        val apkCache = File(runtimeDirectory, "cache/apk").apply { mkdirs() }
-        File(rootfs, "var/cache/apk").mkdirs()
+        val aptCache = File(runtimeDirectory, "cache/apt/archives").apply { mkdirs() }
+        File(aptCache, "partial").mkdirs()
+        File(rootfs, "var/cache/apt/archives").mkdirs()
+        // Docker's slim image otherwise deletes these archives after every apt operation.
+        val dockerClean = File(rootfs, "etc/apt/apt.conf.d/docker-clean")
+        require(!dockerClean.exists() || dockerClean.delete()) { "Unable to enable the Debian package cache" }
+        File(rootfs, "etc/apt/apt.conf.d/keep-downloads").writeText("APT::Keep-Downloaded-Packages \"true\";\n")
+        File(rootfs, "etc/apt/sources.list").apply {
+            parentFile?.mkdirs()
+            writeText(
+                "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware\n" +
+                    "deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware\n" +
+                    "deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware\n",
+            )
+        }
         val command =
             listOf(
                 suite.proot.absolutePath,
@@ -448,14 +495,20 @@ class LocalRuntimeInstaller(
                 "-b",
                 "/system",
                 "-b",
-                "${apkCache.absolutePath}:/var/cache/apk",
+                "${aptCache.absolutePath}:/var/cache/apt/archives",
                 "-w",
                 "/root",
-                "/bin/sh",
-                "-lc",
-                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin " +
-                    "/sbin/apk --cache-dir /var/cache/apk add ${packages.joinToString(" ")} && " +
-                    "/usr/sbin/update-ca-certificates",
+                // Debian 12 has a merged /usr: this is the real interpreter, and `/bin/sh` only
+                // reaches it through the `/bin` -> `usr/bin` link. Naming it directly keeps the
+                // install working even against a rootfs extracted by an older build.
+                "/usr/bin/sh",
+                "-c",
+                GUEST_ENV +
+                    "apt-get update -qq && " +
+                    "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends " +
+                    "${packages.filterNot { it == "gh" }.joinToString(" ")} && " +
+                    "/usr/sbin/update-ca-certificates && " +
+                    "rm -rf /var/lib/apt/lists/*",
             )
         val installLog =
             File(runtimeDirectory, "logs/tool-install.log").apply {
@@ -482,19 +535,78 @@ class LocalRuntimeInstaller(
             "Unable to install runtime packages. $PACKAGE_INSTALL_RETRY_HINT\n\n" +
                 "Last log lines:\n${installLog.readText().takeLast(4000)}"
         }
+        if ("gh" in packages) installGitHubCli(rootfs, suite, prootTmp, aptCache)
     }
 
-    private fun configureRootfs(
+    private fun installGitHubCli(
+        rootfs: File,
+        suite: EmbeddedCommandSuite.Paths,
+        prootTmp: File,
+        aptCache: File,
+    ) {
+        val arch = if (abi == "arm64-v8a") "arm64" else "amd64"
+        val command =
+            listOf(
+                suite.proot.absolutePath,
+                "--kill-on-exit",
+                "--link2symlink",
+                "-0",
+                "-r",
+                rootfs.absolutePath,
+                "-b",
+                "/dev",
+                "-b",
+                "/proc",
+                "-b",
+                "/sys",
+                "-b",
+                "${aptCache.absolutePath}:/var/cache/apt/archives",
+                "-w",
+                "/root",
+                "/usr/bin/sh",
+                "-c",
+                GUEST_ENV +
+                    "curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg " +
+                    "-o /usr/share/keyrings/githubcli-archive-keyring.gpg && " +
+                    "echo \"deb [arch=$arch signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] " +
+                    "https://cli.github.com/packages stable main\" > /etc/apt/sources.list.d/github-cli.list && " +
+                    "apt-get update -qq && " +
+                    "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh && " +
+                    "rm -rf /var/lib/apt/lists/*",
+            )
+        val installLog =
+            File(runtimeDirectory, "logs/tool-gh-install.log").apply {
+                parentFile?.mkdirs()
+                delete()
+            }
+        val process =
+            ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.to(installLog))
+                .apply {
+                    environment().putAll(suite.environment())
+                    environment()["PROOT_TMP_DIR"] = prootTmp.absolutePath
+                }
+                .start()
+        val completed = process.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+        if (!completed) {
+            process.destroyForcibly()
+            error("GitHub CLI installation timed out")
+        }
+        require(process.exitValue() == 0) {
+            "Unable to install GitHub CLI: ${installLog.readText().takeLast(4000)}"
+        }
+    }
+
+    private suspend fun configureRootfs(
         rootfs: File,
         suite: EmbeddedCommandSuite.Paths,
     ) {
-        File(rootfs, "root").mkdirs()
+        listOf("root", "tmp", "workspace", "dev", "proc", "sys", "system").forEach { File(rootfs, it).mkdirs() }
         File(rootfs, "tmp").apply {
-            mkdirs()
             setWritable(true, false)
             setExecutable(true, false)
         }
-        File(rootfs, "workspace").mkdirs()
         File(rootfs, "etc/resolv.conf").apply {
             parentFile?.mkdirs()
             writeText("nameserver 1.1.1.1\nnameserver 8.8.8.8\n")
@@ -512,16 +624,70 @@ class LocalRuntimeInstaller(
         }
         File(rootfs, "root/.config/opencode").mkdirs()
         File(rootfs, "root/.local/share/opencode").mkdirs()
-        // The compact Alpine archive intentionally omits a few SONAME symlinks. apk loads
-        // libapk.so.3 by SONAME, so restore the link before installing agent dependencies.
-        val libApk = File(rootfs, "usr/lib/libapk.so.3")
-        if (!libApk.exists() && File(rootfs, "usr/lib/libapk.so.3.0.0").isFile) {
-            Os.symlink("libapk.so.3.0.0", libApk.absolutePath)
-        }
+        ensureGlibcLoader(rootfs)
+        resetAlternatives(rootfs)
+        installPtyUtility(rootfs)
         installAndroidHelperScripts(rootfs)
         provisionBrowserMcp(rootfs)
         provisionScheduleMcp(rootfs)
         require(suite.proot.isFile) { "PRoot launcher is unavailable" }
+    }
+
+    /**
+     * Drops the `/etc/alternatives` entries the extractor materialized as plain copies.
+     *
+     * [RuntimeArchive] deliberately replaces symlinks with copies of their targets, which is fine
+     * for ordinary files but not for this directory: `update-alternatives` requires each entry to
+     * be a real symlink and aborts with "cannot stat file '/etc/alternatives/pager': Invalid
+     * argument" when it finds a regular file, failing `less`'s postinst and with it the whole apt
+     * run. Removing them lets dpkg install its own links inside the guest, where symlinks work.
+     */
+    private fun resetAlternatives(rootfs: File) {
+        File(rootfs, "etc/alternatives").listFiles()?.forEach { entry ->
+            if (entry.isFile && entry.name != "README") entry.delete()
+        }
+    }
+
+    /** Copies the glibc loader to its classic `/lib` path, where every ELF interpreter looks. */
+    private fun ensureGlibcLoader(rootfs: File) {
+        val loaderName = if (abi == "arm64-v8a") "ld-linux-aarch64.so.1" else "ld-linux-x86-64.so.2"
+        val source =
+            listOf(
+                File(rootfs, "lib/aarch64-linux-gnu/$loaderName"),
+                File(rootfs, "lib/x86_64-linux-gnu/$loaderName"),
+            ).firstOrNull { it.isFile }
+                ?: error("Debian glibc loader is missing: $loaderName")
+        val loader = File(rootfs, "lib/$loaderName")
+        if (!loader.isFile) {
+            loader.parentFile?.mkdirs()
+            source.copyTo(loader, overwrite = true)
+            loader.setExecutable(true, false)
+        }
+    }
+
+    /**
+     * Installs Debian's `bsdutils` package as a `.deb`.
+     *
+     * bookworm-slim omits `/usr/bin/script`, which the Claude Code sign-in flow needs to give the
+     * CLI a real PTY. Extracting the single `.deb` mirrors [DebianRootfsInstaller]'s proven path
+     * instead of depending on apt's dependency resolution for what is effectively one file.
+     */
+    private suspend fun installPtyUtility(rootfs: File) {
+        val asset = DebianRootfsManifest.bsdutilsFor(abi)
+        val packageFile =
+            File(runtimeDirectory, "cache/${asset.name}-$abi.deb").apply {
+                parentFile?.mkdirs()
+            }
+        if (packageFile.length() != asset.sizeBytes || runCatching { RuntimeArchive.verifySha256(packageFile, asset.sha256) }.isFailure) {
+            downloader.download(
+                url = asset.url,
+                destination = packageFile,
+                expectedSha256 = asset.sha256,
+                expectedSizeBytes = asset.sizeBytes,
+            )
+        }
+        packageFile.inputStream().use { RuntimeArchive.extractDebianPackage(it, rootfs) }
+        require(File(rootfs, "usr/bin/script").isFile) { "Debian PTY utility was not installed" }
     }
 
     /**
@@ -540,7 +706,7 @@ class LocalRuntimeInstaller(
             }
     }
 
-    /** Installs the Claude Code PermissionRequest hook into an Alpine rootfs. */
+    /** Installs the Claude Code PermissionRequest hook into a Debian rootfs. */
     fun provisionClaudePermissionHook(rootfs: File = File(runtimeDirectory, "environment/rootfs")) {
         if (!rootfs.isDirectory) return
         runCatching {
@@ -665,17 +831,30 @@ class LocalRuntimeInstaller(
     }
 
     private fun copyCaCertificates(
-        alpineRootfs: File,
-        debianRootfs: File,
+        sourceRootfs: File,
+        targetRootfs: File,
     ) {
-        val source = File(alpineRootfs, "etc/ssl/certs/ca-certificates.crt")
+        val source = File(sourceRootfs, "etc/ssl/certs/ca-certificates.crt")
         if (!source.isFile) return
-        val destination = File(debianRootfs, "etc/ssl/certs/ca-certificates.crt")
+        val destination = File(targetRootfs, "etc/ssl/certs/ca-certificates.crt")
         destination.parentFile?.mkdirs()
         source.copyTo(destination, overwrite = true)
     }
 
     internal companion object {
+        /**
+         * Guest-side environment for every `proot ... /usr/bin/sh -c` run in this installer.
+         *
+         * PRoot hands the child the host process's environment, so without this the guest inherits
+         * `TMPDIR` and `HOME` pointing at Android paths that do not exist inside the rootfs. That is
+         * not cosmetic: ca-certificates' postinst died with "mktemp: failed to create file via
+         * template '/data/user/0/.../command-suite/tmp/ca-certificates.tmp.XXXXXX': No such file or
+         * directory", which failed the whole apt run.
+         */
+        const val GUEST_ENV =
+            "export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin " +
+                "TMPDIR=/tmp HOME=/root && "
+
         private const val METADATA_FILE = "metadata.json"
         private const val BROWSER_MCP_NAME = "and-code-browser"
         private const val BROWSER_MCP_BIN = "/usr/local/bin/andcode-browser-mcp.py"
@@ -695,10 +874,10 @@ class LocalRuntimeInstaller(
                 "openssh-client",
                 "ripgrep",
                 "ca-certificates",
-                "libstdc++",
-                "android-tools",
+                "libstdc++6",
+                "adb",
                 "python3",
-                "py3-pillow",
+                "python3-pil",
             )
 
         /** Project-specific compilers, language SDKs, editors, and convenience utilities. */
@@ -709,24 +888,23 @@ class LocalRuntimeInstaller(
                 "less",
                 "nano",
                 "vim",
-                "github-cli",
-                "openjdk17",
+                "gh",
+                "openjdk-17-jdk-headless",
                 "gradle",
-                "py3-pip",
+                "python3-pip",
                 "nodejs",
                 "npm",
                 "make",
                 "cmake",
                 "gcc",
                 "g++",
-                "musl-dev",
-                "pkgconf",
+                "libc6-dev",
+                "pkg-config",
                 "patch",
                 "zip",
                 "unzip",
-                "sqlite",
-                "go",
-                "gcompat",
+                "sqlite3",
+                "golang-go",
                 "util-linux",
             )
     }

@@ -32,7 +32,7 @@ data class LocalRuntimeMetadata(
      * the agent they actually contain.
      */
     @SerialName("components") val components: Set<String> = setOf(LocalAgent.OPEN_CODE.id),
-    /** Legacy runtimes installed the complete Alpine toolchain, but not its Debian equivalent. */
+    /** Legacy runtimes installed the complete toolchain in the single rootfs, but predate a separate Debian (Antigravity) toolchain flag. */
     @SerialName("fullDevelopmentToolsInstalled") val fullDevelopmentToolsInstalled: Boolean = true,
     @SerialName("fullDebianDevelopmentToolsInstalled") val fullDebianDevelopmentToolsInstalled: Boolean = false,
 ) {

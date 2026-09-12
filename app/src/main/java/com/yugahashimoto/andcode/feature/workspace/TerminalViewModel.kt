@@ -41,7 +41,7 @@ class TerminalViewModel(
             TerminalUiState(
                 lines =
                     listOf(
-                        TerminalLine("OpenCode Terminal - PRoot Alpine Linux", TerminalLineType.SYSTEM),
+                        TerminalLine("OpenCode Terminal - PRoot Debian Linux", TerminalLineType.SYSTEM),
                     ),
             ),
         )
@@ -102,7 +102,7 @@ class TerminalViewModel(
             it.copy(
                 lines =
                     listOf(
-                        TerminalLine("OpenCode Terminal - PRoot Alpine Linux", TerminalLineType.SYSTEM),
+                        TerminalLine("OpenCode Terminal - PRoot Debian Linux", TerminalLineType.SYSTEM),
                     ),
             )
         }

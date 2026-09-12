@@ -408,7 +408,7 @@
     <string name="notification_channel_local_runtime_description">在此 Android 设备上运行的 OpenCode 的状态</string>
 
     <string name="install_step_preparing_command_env">正在准备 Android 命令环境</string>
-    <string name="install_step_downloading_alpine">正在下载 Alpine Linux</string>
+    <string name="install_step_downloading_debian">正在下载 Debian Linux</string>
     <string name="install_step_downloading_opencode">正在下载 OpenCode</string>
     <string name="install_step_extracting_linux_env">正在解压 Linux 环境</string>
     <string name="install_step_extracting_opencode">正在解压 OpenCode</string>
@@ -769,7 +769,7 @@
     <!-- Command palette & search -->
     <string name="search_label">Search</string>
     <!-- Terminal -->
-    <string name="terminal_banner">OpenCode Terminal - PRoot Alpine Linux</string>
+    <string name="terminal_banner">OpenCode 终端 - PRoot Debian Linux</string>
     <string name="terminal_exit_code">exit code: %1$d</string>
 
     <!-- Workspace explorer tabs -->
@@ -935,8 +935,8 @@
     <string name="agent_update_result_latest">已是最新版本（%1$s）</string>
     <string name="antigravity_update_button">更新 Antigravity</string>
     <string name="claude_step_preparing_runtime">正在准备 Linux 环境</string>
-    <string name="claude_step_adding_repository">正在添加 Claude Code 软件源</string>
-    <string name="claude_step_downloading_package">正在下载 Claude Code（约 80 MB）</string>
+    <string name="claude_step_adding_repository">正在准备安装 Claude Code</string>
+    <string name="claude_step_downloading_package">正在下载 Claude Code</string>
     <string name="claude_step_verifying">正在验证安装</string>
     <string name="claude_installed_version">Claude Code %1$s</string>
     <string name="antigravity_installed_version">Antigravity %1$s</string>

@@ -602,8 +602,8 @@ class LocalRuntimeUpdater(
 
         private fun expectedAssetName(abi: String): String =
             when (abi) {
-                "arm64-v8a" -> "opencode-linux-arm64-musl.tar.gz"
-                "x86_64" -> "opencode-linux-x64-musl.tar.gz"
+                "arm64-v8a" -> "opencode-linux-arm64.tar.gz"
+                "x86_64" -> "opencode-linux-x64.tar.gz"
                 else -> error("Unsupported Android ABI for OpenCode updates: $abi")
             }
     }

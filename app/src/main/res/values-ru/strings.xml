@@ -411,7 +411,7 @@
     <string name="notification_channel_local_runtime_description">Статус OpenCode, работающего на этом устройстве Android</string>
 
     <string name="install_step_preparing_command_env">Подготовка среды команд Android</string>
-    <string name="install_step_downloading_alpine">Загрузка Alpine Linux</string>
+    <string name="install_step_downloading_debian">Загрузка Debian Linux</string>
     <string name="install_step_downloading_opencode">Загрузка OpenCode</string>
     <string name="install_step_extracting_linux_env">Извлечение среды Linux</string>
     <string name="install_step_extracting_opencode">Извлечение OpenCode</string>
@@ -775,7 +775,7 @@
     <!-- Command palette & search -->
     <string name="search_label">Search</string>
     <!-- Terminal -->
-    <string name="terminal_banner">OpenCode Terminal - PRoot Alpine Linux</string>
+    <string name="terminal_banner">Терминал OpenCode - PRoot Debian Linux</string>
     <string name="terminal_exit_code">exit code: %1$d</string>
 
     <!-- Workspace explorer tabs -->
@@ -941,8 +941,8 @@
     <string name="agent_update_result_latest">Уже актуальная версия (%1$s)</string>
     <string name="antigravity_update_button">Обновить Antigravity</string>
     <string name="claude_step_preparing_runtime">Подготовка среды Linux</string>
-    <string name="claude_step_adding_repository">Добавление репозитория пакетов Claude Code</string>
-    <string name="claude_step_downloading_package">Загрузка Claude Code (около 80 МБ)</string>
+    <string name="claude_step_adding_repository">Подготовка установки Claude Code</string>
+    <string name="claude_step_downloading_package">Загрузка Claude Code</string>
     <string name="claude_step_verifying">Проверка установки</string>
     <string name="claude_installed_version">Claude Code %1$s</string>
     <string name="antigravity_installed_version">Antigravity %1$s</string>

@@ -5,8 +5,8 @@ import com.yugahashimoto.andcode.R
 /**
  * A coding agent that can be installed into the shared Android-local Linux sandbox.
  *
- * Both agents run inside the same Alpine/PRoot rootfs; they differ in how they are provisioned
- * (OpenCode ships as a downloaded binary, Claude Code as an apk package) and in how the app talks
+ * Both agents run inside the same Debian/PRoot rootfs; they differ in how they are provisioned
+ * (OpenCode ships as a downloaded binary, Claude Code as an npm package) and in how the app talks
  * to them (a local HTTP server versus a streaming JSON process).
  */
 enum class LocalAgent(
