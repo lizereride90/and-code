@@ -9,6 +9,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.yugahashimoto.andcode.AndCodeApplication
 import com.yugahashimoto.andcode.feature.browser.GuestBrowserScreen
+import com.yugahashimoto.andcode.feature.desktop.VncViewerScreen
+import com.yugahashimoto.andcode.feature.desktop.VncViewerViewModel
 import com.yugahashimoto.andcode.feature.workspace.CodeViewerScreen
 import com.yugahashimoto.andcode.feature.workspace.CodeViewerViewModel
 import com.yugahashimoto.andcode.feature.workspace.LocalRuntimeManagementScreen
@@ -103,6 +105,8 @@ fun NavGraphBuilder.workspaceNavGraph(
                             installFullDevelopmentToolsAction = app.localRuntimeController::installFullDevelopmentTools,
                             runtimeEnvironmentInstalledProvider = app.localRuntimeManager::runtimeEnvironmentInstalled,
                             fullDevelopmentToolsInstalledProvider = app.localRuntimeManager::fullDevelopmentToolsInstalled,
+                            desktopInstalledProvider = app.localRuntimeManager::desktopInstalled,
+                            installDesktopAction = app.localRuntimeController::installDesktop,
                             deleteAction = app.localRuntimeController::delete,
                             getString = { app.getString(it) },
                             adbState = app.adbConnectionManager.state,
@@ -127,6 +131,7 @@ fun NavGraphBuilder.workspaceNavGraph(
             onRefresh = managementViewModel::refresh,
             onRepair = managementViewModel::repair,
             onInstallFullDevelopmentTools = managementViewModel::installFullDevelopmentTools,
+            onInstallDesktop = managementViewModel::installDesktop,
             onRequestDelete = managementViewModel::requestDelete,
             onDismissDelete = managementViewModel::dismissDelete,
             onConfirmDelete = managementViewModel::confirmDelete,
@@ -202,6 +207,39 @@ fun NavGraphBuilder.workspaceNavGraph(
                 requestedUrl
                     ?: app.localRuntimeManager.installedPort()?.let { "http://127.0.0.1:$it/" }.orEmpty(),
             onBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(ROUTE_GUEST_DESKTOP) {
+        val viewerViewModel: VncViewerViewModel =
+            viewModel(
+                key = "vnc-viewer",
+                factory =
+                    ViewModelFactory {
+                        VncViewerViewModel(
+                            sessionManager = app.desktopSessionManager,
+                            desktopInstalled = app.localRuntimeManager::desktopInstalled,
+                            installDesktop = app.localRuntimeController::installDesktop,
+                        )
+                    },
+            )
+        val viewerState by viewerViewModel.state.collectAsState()
+        VncViewerScreen(
+            state = viewerState,
+            onBack = {
+                viewerViewModel.close()
+                navController.popBackStack()
+            },
+            onRetry = viewerViewModel::retry,
+            onInstallAndConnect = viewerViewModel::installAndConnect,
+            onToggleKeyboard = viewerViewModel::toggleKeyboard,
+            onPointerModeChange = viewerViewModel::setPointerMode,
+            onSendPointer = viewerViewModel::sendPointerEvent,
+            onSendKeysym = viewerViewModel::sendKeysym,
+            onSendCharacter = viewerViewModel::sendCharacter,
+            onBackspace = viewerViewModel::backspace,
+            onSendLine = viewerViewModel::sendLine,
+            onTypingBufferChange = viewerViewModel::updateTypingBuffer,
         )
     }
 

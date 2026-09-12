@@ -1160,4 +1160,32 @@
     <string name="full_development_tools_installed">Complete development tools are installed</string>
     <string name="install_full_development_tools_button">Install complete toolchain</string>
     <string name="runtime_full_development_tools_start_failed">Could not start development tool installation</string>
+
+    <!-- Desktop (VNC) -->
+    <string name="desktop_install_title">Desktop environment</string>
+    <string name="desktop_install_description">Optional XFCE desktop accessed from the built-in viewer. Adds a lightweight graphical interface to the local runtime.</string>
+    <string name="desktop_installed">Desktop environment is installed</string>
+    <string name="install_desktop_button">Install desktop</string>
+    <string name="desktop_row">Desktop</string>
+    <string name="runtime_desktop_start_failed">Could not start desktop installation</string>
+    <string name="install_step_installing_desktop">Installing the desktop</string>
+    <string name="vnc_viewer_title">Desktop</string>
+    <string name="vnc_keyboard_toggle">Keyboard</string>
+    <string name="vnc_zoom_fit">Fit to screen</string>
+    <string name="vnc_disconnect">Disconnect</string>
+    <string name="vnc_installing">Installing the desktop…</string>
+    <string name="vnc_starting">Starting the desktop…</string>
+    <string name="vnc_connecting">Connecting…</string>
+    <string name="vnc_desktop_not_installed">The desktop is not installed yet. Installing it downloads XFCE and adds about 300 MB to the local runtime.</string>
+    <string name="vnc_install_button">Install and open</string>
+    <string name="vnc_retry">Retry</string>
+    <string name="vnc_back">Back</string>
+    <string name="vnc_pointer_mode_left">Touch drags with the left button</string>
+    <string name="vnc_pointer_mode_middle">Touch drags with the middle button</string>
+    <string name="vnc_pointer_mode_right">Touch drags with the right button</string>
+    <string name="vnc_pointer_mode_left_short">L</string>
+    <string name="vnc_pointer_mode_middle_short">M</string>
+    <string name="vnc_pointer_mode_right_short">R</string>
+    <string name="vnc_typing_hint">Type here to send keys</string>
+    <string name="vnc_enter_button">Enter</string>
 </resources>

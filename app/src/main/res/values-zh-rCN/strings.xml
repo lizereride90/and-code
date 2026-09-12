@@ -1137,4 +1137,31 @@
     <string name="full_development_tools_installed">完整开发工具已安装</string>
     <string name="install_full_development_tools_button">安装完整工具链</string>
     <string name="runtime_full_development_tools_start_failed">无法开始安装开发工具</string>
+
+    <string name="desktop_install_title">桌面环境</string>
+    <string name="desktop_install_description">可从内置查看器访问的可选 XFCE 桌面。为本地运行时添加轻量级图形界面。</string>
+    <string name="desktop_installed">桌面环境已安装</string>
+    <string name="install_desktop_button">安装桌面</string>
+    <string name="desktop_row">桌面</string>
+    <string name="runtime_desktop_start_failed">无法开始桌面安装</string>
+    <string name="install_step_installing_desktop">正在安装桌面</string>
+    <string name="vnc_viewer_title">桌面</string>
+    <string name="vnc_keyboard_toggle">键盘</string>
+    <string name="vnc_zoom_fit">适应屏幕</string>
+    <string name="vnc_disconnect">断开连接</string>
+    <string name="vnc_installing">正在安装桌面…</string>
+    <string name="vnc_starting">正在启动桌面…</string>
+    <string name="vnc_connecting">正在连接…</string>
+    <string name="vnc_desktop_not_installed">桌面尚未安装。安装将下载 XFCE 并向本地运行时增加约 300 MB。</string>
+    <string name="vnc_install_button">安装并打开</string>
+    <string name="vnc_retry">重试</string>
+    <string name="vnc_back">返回</string>
+    <string name="vnc_pointer_mode_left">触摸用左键拖动</string>
+    <string name="vnc_pointer_mode_middle">触摸用中键拖动</string>
+    <string name="vnc_pointer_mode_right">触摸用右键拖动</string>
+    <string name="vnc_pointer_mode_left_short">左</string>
+    <string name="vnc_pointer_mode_middle_short">中</string>
+    <string name="vnc_pointer_mode_right_short">右</string>
+    <string name="vnc_typing_hint">在此输入以发送按键</string>
+    <string name="vnc_enter_button">回车</string>
 </resources>

@@ -81,6 +81,7 @@ fun SettingsScreenV2(
     onOpenGitHubSettings: () -> Unit = {},
     onOpenLocalRuntime: () -> Unit,
     onOpenGuestBrowser: () -> Unit = {},
+    onOpenDesktop: () -> Unit = {},
     onOpenRemoteConnection: () -> Unit,
     onOpenWorkspaces: () -> Unit,
     onOpenDiagnostics: () -> Unit,
@@ -320,6 +321,12 @@ fun SettingsScreenV2(
                     icon = Icons.Default.OpenInBrowser,
                     title = stringResource(R.string.guest_browser_row),
                     onClick = onOpenGuestBrowser,
+                )
+                SettingsDivider()
+                SettingsRow(
+                    icon = Icons.Default.Build,
+                    title = stringResource(R.string.desktop_row),
+                    onClick = onOpenDesktop,
                 )
                 SettingsDivider()
                 SettingsRow(

@@ -346,6 +346,77 @@ class LocalRuntimeInstaller(
             }
         }
 
+    /**
+     * Installs the XFCE desktop environment and its TigerVNC server into the active sandbox without
+     * rebuilding the runtime. Provions the guest's VNC password and `xstartup` in the same pass, so
+     * the built-in viewer ([DesktopSessionManager]) can simply start `Xvnc` afterwards.
+     */
+    suspend fun installDesktop(onProgress: (Float?, String, LocalAgent?) -> Unit = { _, _, _ -> }): LocalRuntimeMetadata =
+        withContext(Dispatchers.IO) {
+            accessCoordinator.write {
+                val active = File(runtimeDirectory, "environment")
+                val rootfs = File(active, "rootfs")
+                val metadataFile = File(runtimeDirectory, METADATA_FILE)
+                require(rootfs.isDirectory && metadataFile.isFile) {
+                    "The Linux environment is not installed"
+                }
+                val metadata =
+                    json.decodeFromString<LocalRuntimeMetadata>(metadataFile.readText())
+                if (metadata.desktopInstalled) return@write metadata
+
+                val suite = EmbeddedCommandSuite(context, runtimeDirectory, abi).ensureInstalled()
+                onProgress(null, context.getString(R.string.install_step_installing_desktop), null)
+                installPackages(rootfs, suite, DESKTOP_RUNTIME_PACKAGES)
+                val password = VncPassword.generate()
+                provisionDesktop(rootfs, password)
+
+                val updated =
+                    metadata.copy(
+                        desktopInstalled = true,
+                        desktopVncPort = DESKTOP_VNC_PORT,
+                        desktopVncPassword = password,
+                    )
+                val encoded = json.encodeToString(updated)
+                File(active, METADATA_FILE).writeText(encoded)
+                replaceFileAtomically(File(active, METADATA_FILE), metadataFile)
+                onProgress(1f, context.getString(R.string.install_step_done), null)
+                updated
+            }
+        }
+
+    /**
+     * Writes the guest-side VNC password file and session startup script TigerVNC runs when a viewer
+     * connects: the password so [DesktopSessionManager] can start `Xvnc` with auth, the `xstartup`
+     * so that session is a full XFCE desktop rather than a bare X root.
+     */
+    private fun provisionDesktop(
+        rootfs: File,
+        password: String,
+    ) {
+        val vncDirectory = File(rootfs, "root/.vnc").apply { mkdirs() }
+        File(vncDirectory, "passwd").apply {
+            writeBytes(VncPassword.obfuscate(password))
+            setReadable(false, false)
+            setWritable(true, true)
+            setReadable(true, true)
+            setWritable(false, false)
+        }
+        val xstartup = File(vncDirectory, "xstartup")
+        xstartup.writeText(
+            "#! /bin/sh\n" +
+                "export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n" +
+                "unset SESSION_MANAGER\n" +
+                "unset DBUS_SESSION_BUS_ADDRESS\n" +
+                "export XDG_CONFIG_HOME=/root/.config\n" +
+                "[ -r /etc/X11/Xresources ] && xrdb /etc/X11/Xresources\n" +
+                "dbus-launch --sh-syntax startxfce4\n",
+        )
+        require(xstartup.setExecutable(true, false) || xstartup.canExecute()) {
+            "Unable to mark the desktop session startup script executable"
+        }
+        File(rootfs, "tmp/.X11-unix").mkdirs()
+    }
+
     fun bundledOpenCodeVersion(): String = manifestReader.read().openCodeVersion
 
     /**
@@ -907,5 +978,25 @@ class LocalRuntimeInstaller(
                 "golang-go",
                 "util-linux",
             )
+
+        /**
+         * XFCE desktop plus the TigerVNC server the built-in viewer connects to. Installed only via
+         * [installDesktop]; it is deliberately absent from the base and development package sets so
+         * the default sandbox stays small. `--no-install-recommends` is fine here: the `xfce4`
+         * metapackage hard-depends on the panel, session, settings, file manager, window manager and
+         * terminal, which is everything a usable desktop needs.
+         */
+        val DESKTOP_RUNTIME_PACKAGES =
+            listOf(
+                "xfce4",
+                "xfce4-terminal",
+                "dbus-x11",
+                "xauth",
+                "tigervnc-standalone-server",
+                "fonts-dejavu-core",
+            )
+
+        const val DESKTOP_VNC_PORT = 5901
+        const val DESKTOP_GEOMETRY = "1280x800"
     }
 }

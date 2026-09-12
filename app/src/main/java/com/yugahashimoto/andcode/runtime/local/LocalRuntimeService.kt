@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 internal enum class LocalRuntimeServiceCommand {
     InstallAndStart,
     InstallFullDevelopmentTools,
+    InstallDesktop,
     Start,
     Reinstall,
     Update,
@@ -48,6 +49,7 @@ internal fun localRuntimeServiceCommand(action: String?): LocalRuntimeServiceCom
     when (action) {
         LocalRuntimeService.ACTION_INSTALL_AND_START -> LocalRuntimeServiceCommand.InstallAndStart
         LocalRuntimeService.ACTION_INSTALL_FULL_DEVELOPMENT_TOOLS -> LocalRuntimeServiceCommand.InstallFullDevelopmentTools
+        LocalRuntimeService.ACTION_INSTALL_DESKTOP -> LocalRuntimeServiceCommand.InstallDesktop
         LocalRuntimeService.ACTION_START -> LocalRuntimeServiceCommand.Start
         LocalRuntimeService.ACTION_REINSTALL -> LocalRuntimeServiceCommand.Reinstall
         LocalRuntimeService.ACTION_UPDATE -> LocalRuntimeServiceCommand.Update
@@ -82,6 +84,7 @@ internal fun clearsUserStoppedFlag(command: LocalRuntimeServiceCommand): Boolean
         -> true
         LocalRuntimeServiceCommand.Stop,
         LocalRuntimeServiceCommand.InstallFullDevelopmentTools,
+        LocalRuntimeServiceCommand.InstallDesktop,
         LocalRuntimeServiceCommand.Delete,
         LocalRuntimeServiceCommand.Restore,
         LocalRuntimeServiceCommand.Ignore,
@@ -384,6 +387,16 @@ class LocalRuntimeService : Service() {
                 val runtimeWasRunning = manager.status() is LocalRuntimeStatus.Ready
                 launchOperation {
                     manager.installFullDevelopmentTools()
+                    if (!runtimeWasRunning) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        stopSelf()
+                    }
+                }
+            }
+            LocalRuntimeServiceCommand.InstallDesktop -> {
+                val runtimeWasRunning = manager.status() is LocalRuntimeStatus.Ready
+                launchOperation {
+                    manager.installDesktop()
                     if (!runtimeWasRunning) {
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
@@ -708,6 +721,7 @@ class LocalRuntimeService : Service() {
         private const val RUNTIME_OPERATION_LEASE_TAG = "runtime-op"
         const val ACTION_INSTALL_AND_START = "com.yugahashimoto.andcode.local.INSTALL_AND_START"
         const val ACTION_INSTALL_FULL_DEVELOPMENT_TOOLS = "com.yugahashimoto.andcode.local.INSTALL_FULL_DEVELOPMENT_TOOLS"
+        const val ACTION_INSTALL_DESKTOP = "com.yugahashimoto.andcode.local.INSTALL_DESKTOP"
         const val ACTION_START = "com.yugahashimoto.andcode.local.START"
         const val ACTION_STOP = "com.yugahashimoto.andcode.local.STOP"
         const val ACTION_RESTART = "com.yugahashimoto.andcode.local.RESTART"
@@ -761,6 +775,8 @@ class LocalRuntimeServiceController(private val context: Context) {
     )
 
     fun installFullDevelopmentTools() = LocalRuntimeService.send(context, LocalRuntimeService.ACTION_INSTALL_FULL_DEVELOPMENT_TOOLS)
+
+    fun installDesktop() = LocalRuntimeService.send(context, LocalRuntimeService.ACTION_INSTALL_DESKTOP)
 
     fun start() = LocalRuntimeService.send(context, LocalRuntimeService.ACTION_START)
 

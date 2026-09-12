@@ -52,6 +52,7 @@ import com.yugahashimoto.andcode.runtime.local.ClaudeCodeController
 import com.yugahashimoto.andcode.runtime.local.ClaudeCodeRuntime
 import com.yugahashimoto.andcode.runtime.local.ClaudeCodeTarget
 import com.yugahashimoto.andcode.runtime.local.DefaultLocalRuntimeUpdateEngine
+import com.yugahashimoto.andcode.runtime.local.DesktopSessionManager
 import com.yugahashimoto.andcode.runtime.local.GitCloneRepository
 import com.yugahashimoto.andcode.runtime.local.GitCredentialHelper
 import com.yugahashimoto.andcode.runtime.local.LocalProviderCredentialStore
@@ -135,6 +136,9 @@ class AndCodeApplication : Application() {
         private set
 
     lateinit var localRuntimeDiagnosticsCollector: LocalRuntimeDiagnosticsCollector
+        private set
+
+    lateinit var desktopSessionManager: DesktopSessionManager
         private set
 
     lateinit var runtimeRegistry: RuntimeRegistry
@@ -273,6 +277,13 @@ class AndCodeApplication : Application() {
                     }
                 },
             )
+        desktopSessionManager =
+            DesktopSessionManager(
+                runtimeDirectory = runtimeDirectory,
+                installedRuntimeProvider = installer::installedRuntime,
+                portProbe = LocalRuntimeManager::defaultPortProbe,
+                accessCoordinator = accessCoordinator,
+            )
         commandRunner =
             LocalRuntimeCommandRunner(
                 runtimeDirectory = runtimeDirectory,
@@ -345,6 +356,7 @@ class AndCodeApplication : Application() {
                 abi = abi,
                 installer = installer,
                 processLauncher = launcher,
+                desktopSession = desktopSessionManager,
                 updateEngine = updateEngine,
                 systemPrompt = { systemPromptStore.selectedPrompt() },
                 messages = runtimeMessages,

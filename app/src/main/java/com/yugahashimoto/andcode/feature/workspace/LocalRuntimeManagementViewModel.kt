@@ -23,6 +23,7 @@ data class LocalRuntimeManagementUiState(
     val isDeleting: Boolean = false,
     val runtimeEnvironmentInstalled: Boolean = false,
     val fullDevelopmentToolsInstalled: Boolean = false,
+    val desktopInstalled: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
     val deleteCompleted: Boolean = false,
     val error: String? = null,
@@ -40,6 +41,8 @@ class LocalRuntimeManagementViewModel(
     private val installFullDevelopmentToolsAction: () -> Unit = {},
     private val runtimeEnvironmentInstalledProvider: () -> Boolean = { false },
     private val fullDevelopmentToolsInstalledProvider: () -> Boolean = { false },
+    private val desktopInstalledProvider: () -> Boolean = { false },
+    private val installDesktopAction: () -> Unit = {},
     private val deleteAction: () -> Unit,
     private val getString: (Int) -> String,
     private val deleteTimeoutMillis: Long = 30_000L,
@@ -127,6 +130,7 @@ class LocalRuntimeManagementViewModel(
                             runtimeStatus = diagnostics.status,
                             runtimeEnvironmentInstalled = runtimeEnvironmentInstalledProvider(),
                             fullDevelopmentToolsInstalled = fullDevelopmentToolsInstalledProvider(),
+                            desktopInstalled = desktopInstalledProvider(),
                             isLoading = false,
                             error = null,
                         )
@@ -154,6 +158,13 @@ class LocalRuntimeManagementViewModel(
         dispatchAction(
             getString(R.string.runtime_full_development_tools_start_failed),
             installFullDevelopmentToolsAction,
+        )
+    }
+
+    fun installDesktop() {
+        dispatchAction(
+            getString(R.string.runtime_desktop_start_failed),
+            installDesktopAction,
         )
     }
 
@@ -264,6 +275,12 @@ class LocalRuntimeManagementViewModel(
                             it.fullDevelopmentToolsInstalled
                         } else {
                             fullDevelopmentToolsInstalledProvider()
+                        },
+                    desktopInstalled =
+                        if (diagnostics == null) {
+                            it.desktopInstalled
+                        } else {
+                            desktopInstalledProvider()
                         },
                     error = if (diagnostics == null) it.error else null,
                 )

@@ -35,6 +35,10 @@ data class LocalRuntimeMetadata(
     /** Legacy runtimes installed the complete toolchain in the single rootfs, but predate a separate Debian (Antigravity) toolchain flag. */
     @SerialName("fullDevelopmentToolsInstalled") val fullDevelopmentToolsInstalled: Boolean = true,
     @SerialName("fullDebianDevelopmentToolsInstalled") val fullDebianDevelopmentToolsInstalled: Boolean = false,
+    /** Whether the XFCE desktop environment and its VNC server were installed into the sandbox. */
+    @SerialName("desktopInstalled") val desktopInstalled: Boolean = false,
+    @SerialName("desktopVncPort") val desktopVncPort: Int = 0,
+    @SerialName("desktopVncPassword") val desktopVncPassword: String = "",
 ) {
     fun has(agent: LocalAgent): Boolean = agent.id in components
 
@@ -54,6 +58,8 @@ class LocalRuntimeManager(
     private val processLauncher: LocalRuntimeProcessLauncher? = null,
     /** Whether the server process we started is still alive, independent of whether it answers. */
     private val processAlive: () -> Boolean = { processLauncher?.isRunning() == true },
+    /** The XFCE/VNC desktop session (if any); stopped before any operation that replaces the rootfs. */
+    private val desktopSession: DesktopSessionManager? = null,
     private val updateEngine: LocalRuntimeUpdateEngine? = null,
     private val runtimeOperations: LocalRuntimeOperations? = null,
     /**
@@ -177,6 +183,7 @@ class LocalRuntimeManager(
         operationMutex.withLock {
             runCatching {
                 withContext(Dispatchers.IO) {
+                    desktopSession?.stop()
                     processLauncher?.stop()
                     if (runtimeDirectory.exists()) {
                         require(runtimeDirectory.deleteRecursively()) {
@@ -196,7 +203,10 @@ class LocalRuntimeManager(
 
     suspend fun reinstall(): Result<LocalRuntimeStatus.Ready> =
         operationMutex.withLock {
-            withContext(Dispatchers.IO) { processLauncher?.stop() }
+            withContext(Dispatchers.IO) {
+                desktopSession?.stop()
+                processLauncher?.stop()
+            }
             val previousMetadata = readMetadata()
             File(runtimeDirectory, METADATA_FILE).delete()
             val configuredInstaller =
@@ -226,6 +236,12 @@ class LocalRuntimeManager(
 
     // UI readers must not wait on the installer's write lock during a long package download.
     fun fullDevelopmentToolsInstalled(): Boolean = readMetadata()?.hasFullDevelopmentTools() == true
+
+    fun desktopInstalled(): Boolean = readMetadata()?.desktopInstalled == true
+
+    fun desktopVncPassword(): String = readMetadata()?.desktopVncPassword.orEmpty()
+
+    fun desktopVncPort(): Int = readMetadata()?.desktopVncPort ?: 0
 
     fun runtimeEnvironmentInstalled(): Boolean = readMetadata() != null && File(runtimeDirectory, "environment/rootfs").isDirectory
 
@@ -275,6 +291,55 @@ class LocalRuntimeManager(
                 mutableLastOperation.value =
                     LocalRuntimeOperationResult.Failed(
                         operation = "development-tools-install",
+                        message = error.message ?: messages.installFailed,
+                    )
+                Result.failure(error)
+            }
+        }
+
+    suspend fun installDesktop(): Result<Unit> =
+        operationMutex.withLock {
+            val configuredInstaller =
+                installer
+                    ?: return@withLock Result.failure(IllegalStateException("Local runtime installer is not configured"))
+            if (configuredInstaller.installedMetadata()?.desktopInstalled == true) {
+                return@withLock Result.success(Unit)
+            }
+            mutableLastOperation.value = null
+            val wasRunning = status() is LocalRuntimeStatus.Ready
+            try {
+                if (wasRunning) withContext(Dispatchers.IO) { processLauncher?.stop() }
+                configuredInstaller.installDesktop { progress, step, agent ->
+                    mutableState.value = LocalRuntimeStatus.Installing(progress, step, agent)
+                }
+                val installed = configuredInstaller.installedRuntime() ?: error("Local runtime is not installed")
+                if (wasRunning) {
+                    startInstalled(installed)
+                } else {
+                    mutableState.value = LocalRuntimeStatus.Stopped(installed.metadata.version, installed.metadata.port)
+                }
+                mutableLastOperation.value = null
+                Result.success(Unit)
+            } catch (error: Throwable) {
+                val restoreError =
+                    withContext(NonCancellable) {
+                        runCatching {
+                            val installed = configuredInstaller.installedRuntime() ?: error("Local runtime is not installed")
+                            if (wasRunning) {
+                                startInstalled(installed)
+                            } else {
+                                mutableState.value = LocalRuntimeStatus.Stopped(installed.metadata.version, installed.metadata.port)
+                            }
+                        }.exceptionOrNull()
+                    }
+                if (restoreError != null) {
+                    error.addSuppressed(restoreError)
+                    mutableState.value = LocalRuntimeStatus.Broken(error.message ?: messages.installFailed)
+                }
+                if (error is CancellationException) throw error
+                mutableLastOperation.value =
+                    LocalRuntimeOperationResult.Failed(
+                        operation = "desktop-install",
                         message = error.message ?: messages.installFailed,
                     )
                 Result.failure(error)
@@ -525,7 +590,10 @@ class LocalRuntimeManager(
         if (operations != null) {
             operations.stop()
         } else {
-            withContext(Dispatchers.IO) { processLauncher?.stop() }
+            withContext(Dispatchers.IO) {
+                desktopSession?.stop()
+                processLauncher?.stop()
+            }
         }
     }
 

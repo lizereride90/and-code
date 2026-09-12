@@ -48,4 +48,23 @@ class LocalRuntimePackageSelectionTest {
                 .isEmpty(),
         )
     }
+
+    @Test
+    fun `desktop packages are a separate optional set`() {
+        assertTrue(
+            LocalRuntimeInstaller.DESKTOP_RUNTIME_PACKAGES.containsAll(
+                listOf("xfce4", "xfce4-terminal", "dbus-x11", "xauth", "tigervnc-standalone-server"),
+            ),
+        )
+        assertTrue(
+            LocalRuntimeInstaller.REQUIRED_RUNTIME_PACKAGES
+                .intersect(LocalRuntimeInstaller.DESKTOP_RUNTIME_PACKAGES.toSet())
+                .isEmpty(),
+        )
+        assertTrue(
+            LocalRuntimeInstaller.OPTIONAL_DEVELOPMENT_PACKAGES
+                .intersect(LocalRuntimeInstaller.DESKTOP_RUNTIME_PACKAGES.toSet())
+                .isEmpty(),
+        )
+    }
 }

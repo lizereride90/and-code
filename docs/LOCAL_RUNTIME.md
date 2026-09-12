@@ -221,6 +221,19 @@ OpenCodeがOAuthの `auto` 方式を返した場合、Androidはブラウザを�
 - 書き込み系はスケジューリングUIと同じく暗号化リポジトリとアラーム（`ScheduleManager`）を通るため、変更はアプリのスケジュール画面へ即反映される
 - 提供ツール: `schedule_list` / `schedule_get` / `schedule_runs` / `schedule_create` / `schedule_update` / `schedule_delete` / `schedule_set_enabled` / `schedule_run_now`
 
+## デスクトップ（任意）
+
+セットアップ後の任意機能として、共有サンドボックス内にXFCEデスクトップとTigerVNCサーバーを導入できる。
+
+- ランタイム設定画面の「Desktop environment」カードから導入（`installDesktop`）。デフォルトでは導入しない
+- 導入対象パッケージ: `xfce4`、`xfce4-terminal`、`dbus-x11`、`xauth`、`tigervnc-standalone-server`、`fonts-dejavu-core`。追加容量は約300〜400MB
+- 導入時に`/root/.vnc/passwd`（TigerVNCのXOR難読化）と`/root/.vnc/xstartup`（`dbus-launch --sh-syntax startxfce4`）を書き込み、パスワードをメタデータへ保存する
+- 画面右上の「Desktop」行（または設定のDesktop行）から内蔵ビューアを開くと、`DesktopSessionManager`が`Xvnc`を起動して`127.0.0.1:5901`へ接続する
+- `Xvnc`は`-localhost yes -SecurityTypes VncAuth`で起動する。ポート転送や外部公開は行わない
+- ビューアはRFC 6143準拠の自作RFBクライアント（Raw・CopyRect・RRE・Hextile）。ダブルタップ相当はタップ、長押し右クリック、2本指でパン・ピンチズーム、2本指タップで中クリック
+- デスクトップセッションはアプリの子プロセスとして起動し、アプリ終了とともに消える。更新・再セットアップ・削除の前には確実に停止する
+- 音声はRFBでは送受信しない
+
 ## Android上の制約
 
 Androidローカル実行はPCの完全な代替ではない。

@@ -65,6 +65,7 @@ fun LocalRuntimeManagementScreen(
     onRefresh: () -> Unit,
     onRepair: () -> Unit,
     onInstallFullDevelopmentTools: () -> Unit,
+    onInstallDesktop: () -> Unit = {},
     onRequestDelete: () -> Unit,
     onDismissDelete: () -> Unit,
     onConfirmDelete: () -> Unit,
@@ -123,6 +124,11 @@ fun LocalRuntimeManagementScreen(
                         installed = state.fullDevelopmentToolsInstalled,
                         busy = busy,
                         onInstall = onInstallFullDevelopmentTools,
+                    )
+                    DesktopCard(
+                        installed = state.desktopInstalled,
+                        busy = busy,
+                        onInstall = onInstallDesktop,
                     )
                 }
                 RuntimeToolsCard(diagnostics)
@@ -219,6 +225,51 @@ private fun DevelopmentToolsCard(
                 Icon(Icons.Default.Build, contentDescription = null)
                 Spacer(Modifier.padding(horizontal = 4.dp))
                 Text(stringResource(R.string.install_full_development_tools_button))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DesktopCard(
+    installed: Boolean,
+    busy: Boolean,
+    onInstall: () -> Unit,
+) {
+    SectionCard {
+        Text(
+            stringResource(R.string.desktop_install_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            stringResource(R.string.desktop_install_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        if (installed) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(stringResource(R.string.desktop_installed))
+            }
+        } else {
+            Button(
+                onClick = onInstall,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.Build, contentDescription = null)
+                Spacer(Modifier.padding(horizontal = 4.dp))
+                Text(stringResource(R.string.install_desktop_button))
             }
         }
     }
