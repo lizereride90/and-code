@@ -10,35 +10,45 @@ data class LocalRuntimeManifest(
     @SerialName("schemaVersion") val schemaVersion: Int,
     @SerialName("runtimeVersion") val runtimeVersion: String,
     @SerialName("openCodeVersion") val openCodeVersion: String,
-    @SerialName("alpineVersion") val alpineVersion: String,
+    @SerialName("alpineVersion") val alpineVersion: String? = null,
+    /** Base distribution the shared sandbox is provisioned from: `alpine` or `debian`. */
+    @SerialName("distribution") val distribution: String = "alpine",
     @SerialName("port") val port: Int,
     @SerialName("architectures") val architectures: Map<String, LocalRuntimeArchitecture>,
 ) {
     fun architecture(abi: String): LocalRuntimeArchitecture =
         requireNotNull(architectures[abi]) { "Local runtime does not support ABI $abi" }
 
+    fun isDebian(): Boolean = distribution == "debian"
+
     fun validate() {
         require(schemaVersion == 1) { "Unsupported local runtime manifest schema: $schemaVersion" }
         require(runtimeVersion.isNotBlank()) { "Runtime version is missing" }
         require(openCodeVersion.isNotBlank()) { "OpenCode version is missing" }
+        require(distribution == "alpine" || distribution == "debian") { "Unsupported runtime distribution: $distribution" }
         require(port in 1024..65535) { "Invalid local OpenCode port: $port" }
         require(architectures.isNotEmpty()) { "Runtime manifest has no architectures" }
-        architectures.forEach { (abi, item) -> item.validate(abi) }
+        architectures.forEach { (abi, item) -> item.validate(abi, distribution) }
     }
 }
 
 @Serializable
 data class LocalRuntimeArchitecture(
-    @SerialName("alpineUrl") val alpineUrl: String,
-    @SerialName("alpineSha256") val alpineSha256: String,
+    @SerialName("alpineUrl") val alpineUrl: String? = null,
+    @SerialName("alpineSha256") val alpineSha256: String? = null,
     @SerialName("openCodeUrl") val openCodeUrl: String,
     @SerialName("openCodeSha256") val openCodeSha256: String,
 ) {
-    fun validate(abi: String) {
-        require(alpineUrl.startsWith("https://")) { "Alpine URL for $abi must use HTTPS" }
+    fun validate(
+        abi: String,
+        distribution: String = "alpine",
+    ) {
         require(openCodeUrl.startsWith("https://")) { "OpenCode URL for $abi must use HTTPS" }
-        require(SHA256.matches(alpineSha256)) { "Invalid Alpine SHA-256 for $abi" }
         require(SHA256.matches(openCodeSha256)) { "Invalid OpenCode SHA-256 for $abi" }
+        if (distribution == "alpine") {
+            require(alpineUrl?.startsWith("https://") == true) { "Alpine URL for $abi must use HTTPS" }
+            require(SHA256.matches(alpineSha256.orEmpty())) { "Invalid Alpine SHA-256 for $abi" }
+        }
     }
 
     companion object {

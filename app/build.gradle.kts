@@ -29,8 +29,15 @@ val githubClientId =
     (
         System.getenv("GITHUB_CLIENT_ID")
             ?: findProperty("GITHUB_CLIENT_ID")?.toString()
+            ?: findProperty("andcode.githubClientId")?.toString()
             ?: ""
     ).trim()
+if (githubClientId.isBlank()) {
+    logger.warn(
+        "GITHUB_CLIENT_ID is not set: GitHub sign-in will be unavailable in this build. " +
+            "Set the GITHUB_CLIENT_ID env var, -PGITHUB_CLIENT_ID=..., or andcode.githubClientId in gradle.properties.",
+    )
+}
 val generatedRuntimeAssets = rootProject.layout.buildDirectory.dir("generated/runtime-assets")
 val generatedRuntimeJni = rootProject.layout.buildDirectory.dir("generated/runtime-jni")
 
@@ -118,6 +125,7 @@ android {
         versionCode = 59
         versionName = "1.2.20"
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"$githubClientId\"")
+        buildConfigField("String", "TERMINAL_BANNER", "\"OpenCode Terminal - PRoot Alpine Linux\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -137,6 +145,15 @@ android {
         // "githubImplementation" dependencies below.
         create("fdroid") {
             dimension = "distribution"
+        }
+        // Side-by-side standalone install with its own package name so it never replaces the main
+        // AndCode app. Same code and features as github, but Firebase/Google Play services are
+        // excluded (see the standalone-specific google-services task disable below).
+        create("standalone") {
+            dimension = "distribution"
+            applicationId = "com.yugahashimoto.andcode.vnc"
+            resValue("string", "app_name", "AndCode VNC")
+            buildConfigField("String", "TERMINAL_BANNER", "\"OpenCode Terminal - PRoot Debian Linux\"")
         }
     }
 
@@ -218,6 +235,15 @@ android {
 
 tasks.named("preBuild").configure {
     dependsOn(prepareOpenCodeRuntimeNativeLibs)
+}
+
+tasks.configureEach {
+    // The google-services Gradle plugin processes google-services.json for every Android variant,
+    // but the standalone flavor has no Firebase client registered in it (package name differs),
+    // so its process*GoogleServices tasks must be skipped or the build fails.
+    if (name.contains("standalone", ignoreCase = true) && name.endsWith("GoogleServices")) {
+        enabled = false
+    }
 }
 
 dependencies {

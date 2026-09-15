@@ -19,6 +19,7 @@ class DebianRootfsInstaller(
     suspend fun installInto(
         destination: File,
         installFullDevelopmentTools: Boolean = false,
+        packages: List<String> = REQUIRED_RUNTIME_PACKAGES,
         onProgress: (Float) -> Unit = {},
     ): File =
         withContext(Dispatchers.IO) {
@@ -46,9 +47,9 @@ class DebianRootfsInstaller(
                 installPackages(
                     extracted,
                     if (installFullDevelopmentTools) {
-                        REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
+                        packages + OPTIONAL_DEVELOPMENT_PACKAGES
                     } else {
-                        REQUIRED_RUNTIME_PACKAGES
+                        packages
                     },
                 )
                 destination.deleteRecursively()
@@ -290,6 +291,23 @@ class DebianRootfsInstaller(
                 "python3",
                 "python3-pil",
             )
+
+        /**
+         * Everything a shared Debian sandbox needs on top of the antigravity runtime set: bash is
+         * the login shell the opencode terminal launches, and the rest round out the minimal
+         * bookworm-slim base the runtime scripts rely on.
+         */
+        val OPENCODE_RUNTIME_PACKAGES =
+            REQUIRED_RUNTIME_PACKAGES +
+                listOf(
+                    "bash",
+                    "libstdc++6",
+                    "procps",
+                    "file",
+                    "less",
+                    "unzip",
+                    "xz-utils",
+                )
 
         val OPTIONAL_DEVELOPMENT_PACKAGES =
             listOf(

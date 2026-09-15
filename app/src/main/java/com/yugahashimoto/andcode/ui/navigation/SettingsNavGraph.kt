@@ -2,6 +2,7 @@ package com.yugahashimoto.andcode.ui.navigation
 
 import android.content.Context
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -16,6 +18,7 @@ import com.yugahashimoto.andcode.R
 import com.yugahashimoto.andcode.core.UrlLauncher
 import com.yugahashimoto.andcode.data.settings.AppPreferences
 import com.yugahashimoto.andcode.data.settings.AppPreferencesRepository
+import com.yugahashimoto.andcode.data.vnc.VncDeviceStore
 import com.yugahashimoto.andcode.feature.assistant.TtsPreview
 import com.yugahashimoto.andcode.feature.settings.AgentSettingsScreen
 import com.yugahashimoto.andcode.feature.settings.AntigravityAgentSettingsScreen
@@ -30,6 +33,12 @@ import com.yugahashimoto.andcode.feature.settings.SettingsViewModel
 import com.yugahashimoto.andcode.feature.settings.SystemPromptScreen
 import com.yugahashimoto.andcode.feature.settings.VoiceSettingsScreen
 import com.yugahashimoto.andcode.feature.support.GitHubSupportSheetHost
+import com.yugahashimoto.andcode.feature.vnc.VncDeviceEditScreen
+import com.yugahashimoto.andcode.feature.vnc.VncDeviceEditViewModel
+import com.yugahashimoto.andcode.feature.vnc.VncDeviceListScreen
+import com.yugahashimoto.andcode.feature.vnc.VncDeviceListViewModel
+import com.yugahashimoto.andcode.feature.vnc.VncViewerScreen
+import com.yugahashimoto.andcode.feature.vnc.VncViewerViewModel
 import com.yugahashimoto.andcode.feature.wakeword.VoskModelState
 import com.yugahashimoto.andcode.feature.wakeword.WakeWordSettingsPolicy
 import com.yugahashimoto.andcode.runtime.RuntimeRegistry
@@ -79,6 +88,7 @@ fun NavGraphBuilder.settingsNavGraph(
             onOpenProviderSettings = { navController.navigate(ROUTE_SETTINGS_PROVIDERS) },
             onOpenAgentSettings = { navController.navigate(ROUTE_SETTINGS_AGENTS) },
             onOpenGitHubSettings = { navController.navigate(ROUTE_SETTINGS_GITHUB) },
+            onOpenVncDevices = { navController.navigate(ROUTE_VNC_DEVICES) },
             onOpenLocalRuntime = { navController.navigate(LOCAL_RUNTIME_MANAGEMENT_ROUTE) },
             onOpenGuestBrowser = { navController.navigate(ROUTE_GUEST_BROWSER) },
             onOpenRemoteConnection = { navController.navigate(ROUTE_REMOTE_CONNECTION) },
@@ -427,6 +437,67 @@ fun NavGraphBuilder.settingsNavGraph(
                     settingsViewModel.reportOAuthError(context.getString(R.string.provider_auth_failed))
                 }
             },
+            onBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(ROUTE_VNC_DEVICES) {
+        val vncStore = remember { VncDeviceStore(context.applicationContext) }
+        val vncListViewModel: VncDeviceListViewModel =
+            viewModel(
+                factory =
+                    com.yugahashimoto.andcode.ui.ViewModelFactory {
+                        VncDeviceListViewModel(vncStore)
+                    },
+            )
+        VncDeviceListScreen(
+            viewModel = vncListViewModel,
+            onOpenEdit = { deviceId ->
+                navController.navigate(if (deviceId == null) ROUTE_VNC_EDIT else vncEditRoute(deviceId))
+            },
+            onOpenViewer = { deviceId -> navController.navigate(vncViewerRoute(deviceId)) },
+            onBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(VNC_EDIT_ROUTE_PATTERN) { backStackEntry ->
+        val deviceId =
+            backStackEntry.arguments?.getString(VNC_EDIT_ARG_ID)?.let { decodeRouteArg(it) }
+        val vncStore = remember { VncDeviceStore(context.applicationContext) }
+        val vncEditViewModel: VncDeviceEditViewModel =
+            viewModel(
+                factory =
+                    com.yugahashimoto.andcode.ui.ViewModelFactory {
+                        VncDeviceEditViewModel(vncStore, deviceId)
+                    },
+            )
+        VncDeviceEditScreen(
+            viewModel = vncEditViewModel,
+            onSaved = { navController.popBackStack() },
+            onDeleted = { navController.popBackStack() },
+            onBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(VNC_VIEWER_ROUTE_PATTERN) { backStackEntry ->
+        val rawId = backStackEntry.arguments?.getString(VNC_VIEWER_ARG_ID) ?: return@composable
+        val deviceId = runCatching { decodeRouteArg(rawId) }.getOrDefault(rawId)
+        val vncStore = remember { VncDeviceStore(context.applicationContext) }
+        val vncDevice = remember(deviceId) { vncStore.device(deviceId) }
+        if (vncDevice == null) {
+            LaunchedEffect(Unit) { navController.popBackStack() }
+            return@composable
+        }
+        val vncViewerViewModel: VncViewerViewModel =
+            viewModel(
+                factory =
+                    com.yugahashimoto.andcode.ui.ViewModelFactory {
+                        VncViewerViewModel(vncDevice)
+                    },
+            )
+        VncViewerScreen(
+            device = vncDevice,
+            viewModel = vncViewerViewModel,
             onBack = { navController.popBackStack() },
         )
     }

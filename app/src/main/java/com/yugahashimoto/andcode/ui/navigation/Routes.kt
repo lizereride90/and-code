@@ -27,6 +27,18 @@ const val SETTINGS_LEGAL_DOCUMENT_ROUTE_PATTERN = "$ROUTE_SETTINGS_LEGAL_DOCUMEN
 
 fun settingsLegalDocumentRoute(docId: String): String = "$ROUTE_SETTINGS_LEGAL_DOCUMENT/$docId"
 
+const val ROUTE_VNC_DEVICES = "vnc-devices"
+const val ROUTE_VNC_EDIT = "vnc-device-edit"
+const val VNC_EDIT_ARG_ID = "deviceId"
+const val VNC_EDIT_ROUTE_PATTERN = "$ROUTE_VNC_EDIT?$VNC_EDIT_ARG_ID={$VNC_EDIT_ARG_ID}"
+const val ROUTE_VNC_VIEWER = "vnc-viewer"
+const val VNC_VIEWER_ARG_ID = "deviceId"
+const val VNC_VIEWER_ROUTE_PATTERN = "$ROUTE_VNC_VIEWER/{$VNC_VIEWER_ARG_ID}"
+
+fun vncEditRoute(deviceId: String): String = "$ROUTE_VNC_EDIT?$VNC_EDIT_ARG_ID=${encodeRouteArg(deviceId)}"
+
+fun vncViewerRoute(deviceId: String): String = "$ROUTE_VNC_VIEWER/${encodeRouteArg(deviceId)}"
+
 const val ROUTE_WORKSPACES = "workspaces"
 const val WORKSPACE_DETAIL_ROUTE = "workspace-detail"
 const val LOCAL_RUNTIME_MANAGEMENT_ROUTE = "local-runtime-management"

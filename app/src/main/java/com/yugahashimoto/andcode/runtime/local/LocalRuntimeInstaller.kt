@@ -95,16 +95,6 @@ class LocalRuntimeInstaller(
             staging.mkdirs()
 
             try {
-                val alpineArchive = File(cache, "alpine-${manifest.alpineVersion}-$abi.tar.gz")
-                download(
-                    architecture.alpineUrl,
-                    alpineArchive,
-                    architecture.alpineSha256,
-                    0.05f,
-                    0.22f,
-                    context.getString(R.string.install_step_downloading_alpine),
-                    onShared,
-                )
                 val withOpenCode = LocalAgent.OPEN_CODE in requestedAgents
                 val openCodeArchive =
                     File(cache, "opencode-${manifest.openCodeVersion}-$abi.tar.gz").takeIf { withOpenCode }?.also { archive ->
@@ -119,9 +109,45 @@ class LocalRuntimeInstaller(
                         )
                     }
 
+                // The standalone distribution bootstraps the shared sandbox from Debian Bookworm
+                // instead of Alpine so the environment the VNC desktop connects to is the same
+                // distro the main AndCode program is built atop.
+                val debianBase = manifest.isDebian()
+                val alpineArchive =
+                    if (!debianBase) {
+                        File(cache, "alpine-${manifest.alpineVersion}-$abi.tar.gz").also { archive ->
+                            download(
+                                architecture.alpineUrl.orEmpty(),
+                                archive,
+                                architecture.alpineSha256.orEmpty(),
+                                0.05f,
+                                0.22f,
+                                context.getString(R.string.install_step_downloading_alpine),
+                                onShared,
+                            )
+                        }
+                    } else {
+                        null
+                    }
+
                 val rootfs = File(staging, "rootfs").apply { mkdirs() }
-                onShared(0.75f, context.getString(R.string.install_step_extracting_linux_env))
-                alpineArchive.inputStream().use { RuntimeArchive.extractTarGz(it, rootfs) }
+                when {
+                    debianBase -> {
+                        val debianStep = context.getString(R.string.install_step_provisioning_debian_rootfs)
+                        onShared(0.75f, debianStep)
+                        DebianRootfsInstaller(runtimeDirectory, abi, downloader, httpClient, commandSuite).installInto(
+                            File(staging, "rootfs"),
+                            installFullDevelopmentTools = includeFullDevelopmentTools,
+                            packages = DebianRootfsInstaller.OPENCODE_RUNTIME_PACKAGES,
+                        ) { progress ->
+                            onShared(0.75f + progress * 0.15f, debianStep)
+                        }
+                    }
+                    else -> {
+                        onShared(0.75f, context.getString(R.string.install_step_extracting_linux_env))
+                        requireNotNull(alpineArchive).inputStream().use { RuntimeArchive.extractTarGz(it, rootfs) }
+                    }
+                }
 
                 val openCodeBinary =
                     openCodeArchive?.let { archive ->
@@ -166,16 +192,20 @@ class LocalRuntimeInstaller(
                         },
                     ),
                 )
-                installPackages(
-                    rootfs = rootfs,
-                    suite = commandSuite,
-                    packages =
-                        if (includeFullDevelopmentTools) {
-                            REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
-                        } else {
-                            REQUIRED_RUNTIME_PACKAGES
-                        },
-                )
+                // Alpine sandboxes install their runtime toolchain with apk right here; a Debian
+                // base already did so with apt inside DebianRootfsInstaller.installInto.
+                if (!debianBase) {
+                    installPackages(
+                        rootfs = rootfs,
+                        suite = commandSuite,
+                        packages =
+                            if (includeFullDevelopmentTools) {
+                                REQUIRED_RUNTIME_PACKAGES + OPTIONAL_DEVELOPMENT_PACKAGES
+                            } else {
+                                REQUIRED_RUNTIME_PACKAGES
+                            },
+                    )
+                }
                 if (LocalAgent.CLAUDE_CODE in requestedAgents) {
                     onClaude(0.93f, context.getString(R.string.install_step_installing_claude_code))
                     ClaudeCodeInstaller.installInto(rootfs, commandSuite, runtimeDirectory)

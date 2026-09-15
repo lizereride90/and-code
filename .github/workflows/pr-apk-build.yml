@@ -20,12 +20,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-      - run: yes | sdkmanager --licenses >/dev/null || true
-      - run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      # The ubuntu-latest runner image already ships the Android SDK (like android.yml), so no
+      # separate SDK setup step is needed - android-actions/setup-android@v3 fails because the
+      # legacy `tools` sdkmanager package it installs no longer exists.
       # See release.yml for why this is AND_CODE_-prefixed rather than GITHUB_CLIENT_ID directly.
-      - run: ./gradlew :app:testGithubDebugUnitTest :app:assembleGithubDebug
+      - run: ./gradlew :app:testGithubDebugUnitTest :app:assembleGithubDebug :app:assembleStandaloneDebug
         env:
           GITHUB_CLIENT_ID: ${{ vars.AND_CODE_GITHUB_CLIENT_ID }}
       - id: upload-apk
@@ -35,6 +38,13 @@ jobs:
           path: app/build/outputs/apk/github/debug/app-github-debug.apk
           if-no-files-found: error
           retention-days: 14
+      - id: upload-standalone-apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: and-code-vnc-debug-apk
+          path: app/build/outputs/apk/standalone/debug/app-standalone-debug.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Comment or update APK link on PR
         uses: actions/github-script@v7
         with:
@@ -42,6 +52,8 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const artifactUrl = '${{ steps.upload-apk.outputs.artifact-url }}';
+            const standaloneArtifactUrl = '${{ steps.upload-standalone-apk.outputs.artifact-url }}';
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
             let prNumber = context.payload.pull_request?.number;
             if (!prNumber) {
               const branch = context.ref.replace(/^refs\/heads\//, '');
@@ -57,12 +69,13 @@ jobs:
             const marker = '<!-- and-code-debug-apk -->';
             const body = [
               marker,
-              '**Debug APK built successfully**',
+              '**Debug APKs built successfully**',
               '',
-              `[Download APK artifact](${artifactUrl})`,
-              `[View workflow run](https://github.com/${owner}/${repo}/actions/runs/${context.runId})`,
+              `[AndCode APK](${artifactUrl}) — replaces the installed AndCode app`,
+              `[AndCode VNC (standalone) APK](${standaloneArtifactUrl}) — installs side-by-side, own package name \`com.yugahashimoto.andcode.vnc\``,
+              `[View workflow run](${runUrl})`,
               '',
-              `Commit: \`${context.sha.slice(0, 12)}\` | Artifact expires in 14 days.`,
+              `Commit: \`${context.sha.slice(0, 12)}\` | Artifacts expire in 14 days.`,
             ].join('\n');
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: prNumber, per_page: 100,

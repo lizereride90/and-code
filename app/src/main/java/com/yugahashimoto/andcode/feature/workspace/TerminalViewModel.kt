@@ -2,6 +2,7 @@ package com.yugahashimoto.andcode.feature.workspace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yugahashimoto.andcode.BuildConfig
 import com.yugahashimoto.andcode.core.runtime.RuntimeWorkTracker
 import com.yugahashimoto.andcode.runtime.local.LocalRuntimeCommandRunner
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,7 @@ class TerminalViewModel(
             TerminalUiState(
                 lines =
                     listOf(
-                        TerminalLine("OpenCode Terminal - PRoot Alpine Linux", TerminalLineType.SYSTEM),
+                        TerminalLine(BuildConfig.TERMINAL_BANNER, TerminalLineType.SYSTEM),
                     ),
             ),
         )
@@ -102,7 +103,7 @@ class TerminalViewModel(
             it.copy(
                 lines =
                     listOf(
-                        TerminalLine("OpenCode Terminal - PRoot Alpine Linux", TerminalLineType.SYSTEM),
+                        TerminalLine(BuildConfig.TERMINAL_BANNER, TerminalLineType.SYSTEM),
                     ),
             )
         }

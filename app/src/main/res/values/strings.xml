@@ -442,10 +442,45 @@
     <string name="chat_auto_accept_short">Auto</string>
     <string name="github_git_operations">GitHub Git operations</string>
     <string name="github_not_connected">Not connected</string>
+
+    <!-- Desktop / VNC -->
+    <string name="vnc_row">Desktop (VNC)</string>
+    <string name="vnc_title">Desktop</string>
+    <string name="vnc_add_device">Add device</string>
+    <string name="vnc_edit_title">Device settings</string>
+    <string name="vnc_add_title">Add device</string>
+    <string name="vnc_empty_title">No desktop devices yet</string>
+    <string name="vnc_empty_hint">Add a VNC device to reach a remote desktop straight from AndCode - no extra app needed. For a desktop running on this device, use name \"debian workspace\" and host localhost:5901.</string>
+    <string name="vnc_edit_settings">Device settings</string>
+    <string name="vnc_field_name">Name</string>
+    <string name="vnc_field_host">Host</string>
+    <string name="vnc_host_hint">localhost for a desktop on this device</string>
+    <string name="vnc_field_port">Port</string>
+    <string name="vnc_field_password">Password (optional)</string>
+    <string name="vnc_password_hint">Leave blank for servers that do not ask for one</string>
+    <string name="vnc_toggle_password_visibility">Show or hide password</string>
+    <string name="vnc_field_scaling">Scaling</string>
+    <string name="vnc_scaling_fit">Fit to screen</string>
+    <string name="vnc_scaling_stretch">Stretch to screen</string>
+    <string name="vnc_scaling_one">100%</string>
+    <string name="vnc_save">Save</string>
+    <string name="vnc_delete">Delete device</string>
+    <string name="vnc_connecting">Connecting…</string>
+    <string name="vnc_connection_failed">Could not connect</string>
+    <string name="vnc_retry">Retry</string>
+    <string name="vnc_status_connecting">Connecting…</string>
+    <string name="vnc_status_connected">Connected</string>
+    <string name="vnc_status_failed">Connection failed</string>
+    <string name="vnc_status_disconnected">Disconnected</string>
+    <string name="vnc_type_hint">Type on the desktop here</string>
+    <string name="vnc_key_esc">Esc</string>
+    <string name="vnc_key_tab">Tab</string>
+    <string name="vnc_pan_mode">Pan</string>
+    <string name="vnc_right_click">Right-click</string>
     <string name="github_connect">Connect GitHub</string>
     <string name="github_screen_title">GitHub / Git Operations</string>
     <string name="github_intro">Connect GitHub for repository, Git, pull request, and Actions workflow operations.</string>
-    <string name="github_client_id_missing">This build has no GitHub client ID, so it cannot start the sign-in. Rebuild with GITHUB_CLIENT_ID set.</string>
+    <string name="github_client_id_missing">This build has no GitHub client ID, so it cannot start the sign-in. To enable it: create a GitHub OAuth app at github.com/settings/developers (any name/URL is fine; it uses the device flow), copy its Client ID, and rebuild from the project root with: GITHUB_CLIENT_ID=xxxxxxxx ./gradlew :app:assembleGithubRelease</string>
     <string name="github_disconnect">Disconnect GitHub</string>
     <string name="github_verification_code">Enter code: %1$s</string>
     <string name="github_waiting_for_authorization">Waiting for authorization…</string>
@@ -896,6 +931,7 @@
     <string name="runtime_step_rolling_back_to">Reverting to OpenCode %1$s</string>
     <string name="install_step_installing_claude_code">Installing Claude Code</string>
     <string name="install_step_preparing_antigravity_rootfs">Preparing Debian Bookworm for Antigravity</string>
+    <string name="install_step_provisioning_debian_rootfs">Preparing Debian Bookworm</string>
     <string name="install_step_downloading_antigravity">Downloading and verifying official Antigravity</string>
     <string name="install_step_installing_antigravity">Installing Antigravity</string>
     <string name="antigravity_permission_plan_desc">Antigravity reads and plans but never edits files or runs commands.</string>
