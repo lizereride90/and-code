@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
@@ -79,6 +80,7 @@ fun SettingsScreenV2(
     onOpenProviderSettings: () -> Unit,
     onOpenAgentSettings: () -> Unit = {},
     onOpenGitHubSettings: () -> Unit = {},
+    onOpenVncDevices: () -> Unit = {},
     onOpenLocalRuntime: () -> Unit,
     onOpenGuestBrowser: () -> Unit = {},
     onOpenRemoteConnection: () -> Unit,
@@ -320,6 +322,12 @@ fun SettingsScreenV2(
                     icon = Icons.Default.OpenInBrowser,
                     title = stringResource(R.string.guest_browser_row),
                     onClick = onOpenGuestBrowser,
+                )
+                SettingsDivider()
+                SettingsRow(
+                    icon = Icons.Default.DesktopWindows,
+                    title = stringResource(R.string.vnc_row),
+                    onClick = onOpenVncDevices,
                 )
                 SettingsDivider()
                 SettingsRow(

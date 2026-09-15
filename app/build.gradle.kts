@@ -29,8 +29,15 @@ val githubClientId =
     (
         System.getenv("GITHUB_CLIENT_ID")
             ?: findProperty("GITHUB_CLIENT_ID")?.toString()
+            ?: findProperty("andcode.githubClientId")?.toString()
             ?: ""
     ).trim()
+if (githubClientId.isBlank()) {
+    logger.warn(
+        "GITHUB_CLIENT_ID is not set: GitHub sign-in will be unavailable in this build. " +
+            "Set the GITHUB_CLIENT_ID env var, -PGITHUB_CLIENT_ID=..., or andcode.githubClientId in gradle.properties.",
+    )
+}
 val generatedRuntimeAssets = rootProject.layout.buildDirectory.dir("generated/runtime-assets")
 val generatedRuntimeJni = rootProject.layout.buildDirectory.dir("generated/runtime-jni")
 
