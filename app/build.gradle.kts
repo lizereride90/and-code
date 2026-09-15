@@ -125,6 +125,7 @@ android {
         versionCode = 59
         versionName = "1.2.20"
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"$githubClientId\"")
+        buildConfigField("String", "TERMINAL_BANNER", "\"OpenCode Terminal - PRoot Alpine Linux\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -152,6 +153,7 @@ android {
             dimension = "distribution"
             applicationId = "com.yugahashimoto.andcode.vnc"
             resValue("string", "app_name", "AndCode VNC")
+            buildConfigField("String", "TERMINAL_BANNER", "\"OpenCode Terminal - PRoot Debian Linux\"")
         }
     }
 

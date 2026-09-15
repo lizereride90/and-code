@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "runtimeVersion": "2026.07.25.1",
+  "distribution": "debian",
+  "openCodeVersion": "1.18.5",
+  "port": 4097,
+  "architectures": {
+    "arm64-v8a": {
+      "openCodeUrl": "https://github.com/anomalyco/opencode/releases/download/v1.18.5/opencode-linux-arm64-musl.tar.gz",
+      "openCodeSha256": "d493f6d15bd4c2cb429d59c5213ea237128f4dd889a9426983b4c6e5d2c047ae"
+    },
+    "x86_64": {
+      "openCodeUrl": "https://github.com/anomalyco/opencode/releases/download/v1.18.5/opencode-linux-x64-musl.tar.gz",
+      "openCodeSha256": "f164e852c7ff98aff99efd039f3ac2acdd1717e25f6b94c471e2c827522f672c"
+    }
+  }
+}
