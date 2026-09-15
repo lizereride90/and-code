@@ -20,10 +20,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: android-actions/setup-android@v3
-      - run: yes | sdkmanager --licenses >/dev/null || true
-      - run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      # The ubuntu-latest runner image already ships the Android SDK (like android.yml), so no
+      # separate SDK setup step is needed - android-actions/setup-android@v3 fails because the
+      # legacy `tools` sdkmanager package it installs no longer exists.
       # See release.yml for why this is AND_CODE_-prefixed rather than GITHUB_CLIENT_ID directly.
       - run: ./gradlew :app:testGithubDebugUnitTest :app:assembleGithubDebug :app:assembleStandaloneDebug
         env:
