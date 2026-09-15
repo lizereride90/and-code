@@ -278,6 +278,20 @@ class DebianRootfsInstaller(
     }
 
     internal companion object {
+        val REQUIRED_RUNTIME_PACKAGES =
+            listOf(
+                "git",
+                "curl",
+                "wget",
+                "jq",
+                "openssh-client",
+                "ripgrep",
+                "ca-certificates",
+                "adb",
+                "python3",
+                "python3-pil",
+            )
+
         /**
          * Everything a shared Debian sandbox needs on top of the antigravity runtime set: bash is
          * the login shell the opencode terminal launches, and the rest round out the minimal
@@ -294,20 +308,6 @@ class DebianRootfsInstaller(
                     "unzip",
                     "xz-utils",
                 )
-
-        val REQUIRED_RUNTIME_PACKAGES =
-            listOf(
-                "git",
-                "curl",
-                "wget",
-                "jq",
-                "openssh-client",
-                "ripgrep",
-                "ca-certificates",
-                "adb",
-                "python3",
-                "python3-pil",
-            )
 
         val OPTIONAL_DEVELOPMENT_PACKAGES =
             listOf(
