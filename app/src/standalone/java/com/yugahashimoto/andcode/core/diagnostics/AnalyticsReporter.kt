@@ -1,3 +1,7 @@
+package com.yugahashimoto.andcode.core.diagnostics
+
+import android.content.Context
+
 /**
  * No-op stand-in for the `github` flavor's Firebase Analytics reporter.
  *
