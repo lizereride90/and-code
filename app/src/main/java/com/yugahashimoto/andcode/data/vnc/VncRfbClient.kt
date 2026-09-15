@@ -44,9 +44,10 @@ class VncRfbClient(
 
     fun start() {
         if (connectionJob?.isActive == true) return
-        connectionJob = scope.launch(Dispatchers.IO) {
-            runConnection()
-        }
+        connectionJob =
+            scope.launch(Dispatchers.IO) {
+                runConnection()
+            }
     }
 
     fun disconnect() {

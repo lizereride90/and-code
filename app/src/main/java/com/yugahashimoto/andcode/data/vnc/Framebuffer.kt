@@ -61,7 +61,10 @@ class Framebuffer(width: Int, height: Int) {
         dirtyListener?.invoke(dx, dy, w, h)
     }
 
-    fun resize(newWidth: Int, newHeight: Int) {
+    fun resize(
+        newWidth: Int,
+        newHeight: Int,
+    ) {
         if (newWidth <= 0 || newHeight <= 0) return
         if (newWidth == width && newHeight == height) return
         val resized = Bitmap.createBitmap(newWidth, newHeight, Bitmap.Config.ARGB_8888)

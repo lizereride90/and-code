@@ -47,16 +47,17 @@ class VncDeviceEditViewModel(
 ) : ViewModel() {
     private val existing = deviceId?.let(store::device)
 
-    private val _state = MutableStateFlow(
-        VncEditUiState(
-            existing = existing,
-            name = existing?.name.orEmpty(),
-            host = existing?.host ?: "localhost",
-            portText = (existing?.port ?: 5901).toString(),
-            password = existing?.password.orEmpty(),
-            scaling = existing?.scaling ?: "fit",
-        ),
-    )
+    private val _state =
+        MutableStateFlow(
+            VncEditUiState(
+                existing = existing,
+                name = existing?.name.orEmpty(),
+                host = existing?.host ?: "localhost",
+                portText = (existing?.port ?: 5901).toString(),
+                password = existing?.password.orEmpty(),
+                scaling = existing?.scaling ?: "fit",
+            ),
+        )
     val state: StateFlow<VncEditUiState> = _state.asStateFlow()
 
     val isEditing: Boolean get() = existing != null
