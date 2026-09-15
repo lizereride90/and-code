@@ -490,9 +490,9 @@ class VncRfbClient(
         const val KEYSYM_ALT = 0xFFE9
 
         // RFB pseudo-encoding numbers (as 32-bit values written to the wire; the high byte is 0xFF).
-        private val PSEUDO_DESKTOP_SIZE: Int = 0xFFFFFF21
-        private val PSEUDO_EXT_DESKTOP_SIZE: Int = 0xFFFF0021
-        private val PSEUDO_DESKTOP_NAME: Int = 0xFFFFFF20
+        private val PSEUDO_DESKTOP_SIZE: Int = 0xFFFFFF21.toInt()
+        private val PSEUDO_EXT_DESKTOP_SIZE: Int = 0xFFFF0021.toInt()
+        private val PSEUDO_DESKTOP_NAME: Int = 0xFFFFFF20.toInt()
     }
 }
 

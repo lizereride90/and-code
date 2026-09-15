@@ -155,7 +155,7 @@ private fun <T> VncDropdown(
     label: String,
     options: List<T>,
     selected: T,
-    optionLabel: (T) -> String,
+    optionLabel: @Composable (T) -> String,
     onSelect: (T) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }

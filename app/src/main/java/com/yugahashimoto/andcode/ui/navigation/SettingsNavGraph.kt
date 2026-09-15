@@ -462,7 +462,7 @@ fun NavGraphBuilder.settingsNavGraph(
 
     composable(VNC_EDIT_ROUTE_PATTERN) { backStackEntry ->
         val deviceId =
-            backStackEntry.arguments?.getString(VNC_EDIT_ARG_ID)?.let(decodeRouteArg)
+            backStackEntry.arguments?.getString(VNC_EDIT_ARG_ID)?.let { decodeRouteArg(it) }
         val vncStore = remember { VncDeviceStore(context.applicationContext) }
         val vncEditViewModel: VncDeviceEditViewModel =
             viewModel(
