@@ -145,6 +145,14 @@ android {
         create("fdroid") {
             dimension = "distribution"
         }
+        // Side-by-side standalone install with its own package name so it never replaces the main
+        // AndCode app. Same code and features as github, but Firebase/Google Play services are
+        // excluded (see the standalone-specific google-services task disable below).
+        create("standalone") {
+            dimension = "distribution"
+            applicationId = "com.yugahashimoto.andcode.vnc"
+            resValue("string", "app_name", "AndCode VNC")
+        }
     }
 
     if (hasReleaseSigning) {
@@ -225,6 +233,15 @@ android {
 
 tasks.named("preBuild").configure {
     dependsOn(prepareOpenCodeRuntimeNativeLibs)
+}
+
+tasks.configureEach {
+    // The google-services Gradle plugin processes google-services.json for every Android variant,
+    // but the standalone flavor has no Firebase client registered in it (package name differs),
+    // so its process*GoogleServices tasks must be skipped or the build fails.
+    if (name.contains("standalone", ignoreCase = true) && name.endsWith("GoogleServices")) {
+        enabled = false
+    }
 }
 
 dependencies {
